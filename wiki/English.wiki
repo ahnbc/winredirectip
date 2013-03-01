@@ -8,7 +8,18 @@
 
 = Export Function =
  
-* redirIP : three input parameters , net adapter information string
-(MAC or IP or LowDeviceName) ,ip string you want to redirect，ip string to redirect
+ * redirIP : three input parameters , net adapter information string
+(MAC or IP or LowDeviceName) ,ip string you want to be redirected，ip string to redirect
     return type is UINT 0=succeed，otherwise return error code
-* Free : free all resource and clear net filter hook
+ * Free : free all resource and clear net filter hook
+
+=  How to Use =
+ 
+ * Download  IP Packet Redirector Driver 
+ * Copy PcaFilterApi.dll file to windows/system32
+  or and add that directory into path variable
+ * run binary file , you will see all support adapters
+   copy the  LowDeviceName (such as \DEVICE\xxxxx)
+   if exists \DEVICE\NDISWANIP use it
+ * run binary file with three parameters,
+    such as xx.exe \DEVICE\yyyy ip_you_want_to_be_redirected ip_you_want_to_redirect_to
