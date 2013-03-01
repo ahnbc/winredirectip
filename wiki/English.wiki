@@ -1,0 +1,14 @@
+#summary One-sentence summary of this page.
+
+= Requirement =
+
+ * win xp or  above (x86 and x64)
+ * IP Packet Redirector Driver (link see: main page)
+
+
+= Export Function =
+ 
+* redirIP : three input parameters , net adapter information string
+(MAC or IP or LowDeviceName) ,ip string you want to redirect，ip string to redirect
+    return type is UINT 0=succeed，otherwise return error code
+* Free : free all resource and clear net filter hook
