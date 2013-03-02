@@ -1,6 +1,6 @@
 #include "main.h"
 #include "stdio.h"
-#include "ntddndis.h"
+
 #include "stdlib.h"
 #include <process.h>
 #include "winsock.h"
@@ -129,10 +129,10 @@ if (i) {
    sum = sum + prot_tcp + htons(len_tcp);
 
 	// keep only the last 16 bits of the 32 bit calculated sum and add the carries
-    	while (sum>>16)
-		sum = (sum & 0xFFFF)+(sum >> 16);
-	//sum = (sum >> 16) + (sum & 0xffff);
-	//sum += (sum >> 16);
+    //	while (sum>>16)
+	//	sum = (sum & 0xFFFF)+(sum >> 16);
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
 	// Take the one's complement of sum
 return (USHORT)(~sum);
 }
@@ -246,7 +246,7 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
 
 		*(ushort *)(Inbuff+14+i+20+16)=0;
 		sum=tcp_sum_calc(dwNumberOfBytesTransfered-34-i,(USHORT *)(Inbuff+14+i+12),(USHORT *)(Inbuff+14+i+16),(USHORT *)(Inbuff+14+i+20));
-		*(ushort *)(Inbuff+14+i+20+16)=sum+0x0600;//i don't know why ??
+		*(ushort *)(Inbuff+14+i+20+16)=sum;
 	 }
 	 }
 	  }
@@ -504,7 +504,8 @@ if(argc ==1){
 	list=BindList::getAllBindList();
 	if(list==NULL)
 	{
-		printf("Error\n");
+		printf("Error No:%d\n",BindList::GetError());
+		system("pause");
 		return 0;
 	}
 	printf("Support Adapter List:\n");

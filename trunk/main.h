@@ -3,6 +3,11 @@
 #define WINVER 0x0502
 #define _WIN32_WINNT 0x0502
 #include "windows.h"
+#ifndef __MINGW32__
+//#include "ntddndis.h"
+#else
+//#include "ddk/ntddndis.h"
+#endif
 #define EX_API __declspec(dllexport)
 #ifndef uint
 #define uint DWORD
