@@ -215,41 +215,65 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
 	 //IO Finish
 	 
  }
+const static USHORT IP_PRO=0x0008,
+		 PPPOE_PRO=0x6488,PPPOE_IP_PRO=0x2100,
+		 LEN_ENT=14,LEN_PPPOE=8;
+const static UCHAR TCP_PRO=6,UDP_PRO=17;
+
+
  VOID CALLBACK InIOReadCompletionRoutine(   
                   DWORD dwErrorCode,   
                   DWORD dwNumberOfBytesTransfered,   
                   LPOVERLAPPED lpOverlapped )
  {
-	 ushort sum=0,i,j=0;
+	 ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
+		 ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
 	 byte *Inbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	// printf("InIO\n");
-	  if(dwNumberOfBytesTransfered>=34)
-	 {
-	 if(dwErrorCode!=0)return;
-	 if(Inbuff[14]==0x11)i=8;
-	 else if(Inbuff[14]==0x45) i=0;
-	 else i=-1;
-	 if(i>=0)
-	 {
-	//	 EnterCriticalSection(&cs);
-		// printf("InIo\n");
-	//	 LeaveCriticalSection(&cs);		 
 	 
-	 *(ushort *)(Inbuff+14+i+10)=0;
-
-	 *((uint *)(Inbuff+14+i+12))=orgIP;
-	 sum=ip_checksum((ushort *)(Inbuff+14+i),20);
-	 *(ushort *)(Inbuff+14+i+10)=sum;
-
-	 if(dwNumberOfBytesTransfered>(i+34)&&*(Inbuff+14+i+9)==6)
+	UCHAR ip_len;
+	if(dwErrorCode!=0)return;
+	  if(dwNumberOfBytesTransfered>=14+20+20)
 	 {
+		
+		proto_3=*(USHORT * )Inbuff+14;
+		if(proto_3==IP_PRO)
+			ip_offset=LEN_ENT;
+		else if(proto_3==PPPOE_PRO)
+		{
+			ppp_next_pro=*(USHORT *)Inbuff+LEN_ENT+6;
+			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
+			else return;
+		}
+		else 	return;
+		proto_4=*(Inbuff+ip_offset+9);
+	//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
+//
+		ip_len=((*(Inbuff+ip_offset))&0x0f)<<2;
+		*(ushort *)(Inbuff+ip_offset+10)=0;
+		*((uint *)(Inbuff+ip_offset+12))=orgIP;
+		sum=ip_checksum((ushort *)(Inbuff+ip_offset),ip_len);
+		*(ushort *)(Inbuff+ip_offset+10)=sum;
 
-		*(ushort *)(Inbuff+14+i+20+16)=0;
-		sum=tcp_sum_calc(dwNumberOfBytesTransfered-34-i,(USHORT *)(Inbuff+14+i+12),(USHORT *)(Inbuff+14+i+16),(USHORT *)(Inbuff+14+i+20));
-		*(ushort *)(Inbuff+14+i+20+16)=sum;
+if(proto_4==TCP_PRO)
+{
+		tcp_offset=ip_offset+ip_len;
+		ip_all_len=htons(*((uint *)(Inbuff+ip_offset+2)));
+		tcp_all_len=ip_all_len-ip_len;
+	 //
+
+	
+	 *(ushort *)(Inbuff+tcp_offset+16)=0;
+		//cal len ip header all length - ip header length
+
+		sum=tcp_sum_calc(tcp_all_len,(USHORT *)(Inbuff+ip_offset+12),
+			(USHORT *)(Inbuff+ip_offset+16),(USHORT *)(Inbuff+tcp_offset));
+
+		*(ushort *)(Inbuff+tcp_offset+16)=sum;
+}
 	 }
-	 }
-	  }
+	 
+	  
 
 	 if(0==WriteFileEx(OutHandle,Inbuff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine))
 		 {
@@ -264,31 +288,52 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
                   LPOVERLAPPED lpOverlapped )
  {
 	 
-	 ushort sum=0,i;
+	 ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
+		 ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
 	 byte *Outbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED),*tcpbuff=NULL;
-	 
+	 UCHAR ip_len;
 	 if(dwErrorCode!=0)return;
 	//printf("OutIO\n");
-	 if(dwNumberOfBytesTransfered>=34)
+	 if(dwNumberOfBytesTransfered>=14+20+20)
 	 {
-		 if(Outbuff[14]==0x11)i=8;
-		 else if(Outbuff[14]==0x45)i=0;
-		 else i=-1;
-if(i>=0)
-	 {
+		
+		proto_3=*(USHORT * )Outbuff+14;
+		if(proto_3==IP_PRO)
+			ip_offset=LEN_ENT;
+		else if(proto_3==PPPOE_PRO)
+		{
+			ppp_next_pro=*(USHORT *)Outbuff+LEN_ENT+6;
+			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
+			else return;
+		}
+		else 	return;
+		proto_4=*(Outbuff+ip_offset+9);
+	//	if(proto_4!=TCP_PRO)return;
+//
+		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
+		*(ushort *)(Outbuff+ip_offset+10)=0;
+		*((uint *)(Outbuff+ip_offset+12))=orgIP;
+		sum=ip_checksum((ushort *)(Outbuff+ip_offset),ip_len);
+		*(ushort *)(Outbuff+ip_offset+10)=sum;
 
-	 *(ushort *)(Outbuff+14+i+10)=0;
-	 *((uint *)(Outbuff+14+i+16))=rediIP;
-	 sum=ip_checksum((ushort *)(Outbuff+14+i),20);
-	 *(ushort *)(Outbuff+14+i+10)=sum;
-	 if(dwNumberOfBytesTransfered>(i+34)&&*(Outbuff+14+i+9)==6)
-	 {
-		 *(ushort *)(Outbuff+14+i+20+16)=0;
-		 sum=tcp_sum_calc(dwNumberOfBytesTransfered-34-i,(USHORT *)(Outbuff+14+i+12),(USHORT *)(Outbuff+14+i+16),(USHORT *)(Outbuff+14+i+20));
-		 *(ushort *)(Outbuff+14+i+20+16)=sum;
+if(proto_4==TCP_PRO)
+{
+		tcp_offset=ip_offset+ip_len;
+		ip_all_len=htons(*((uint *)(Outbuff+ip_offset+2)));
+		tcp_all_len=ip_all_len-ip_len;
+	 //
+
+	
+	 *(ushort *)(Outbuff+tcp_offset+16)=0;
+		//cal len ip header all length - ip header length
+
+		sum=tcp_sum_calc(tcp_all_len,(USHORT *)(Outbuff+ip_offset+12),
+			(USHORT *)(Outbuff+ip_offset+16),(USHORT *)(Outbuff+tcp_offset));
+
+		*(ushort *)(Outbuff+tcp_offset+16)=sum;
+}
 	 }
-	}
-	}
+
 
 	 if(0==WriteFileEx(InHandle,Outbuff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine))
 		 {
