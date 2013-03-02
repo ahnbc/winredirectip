@@ -26,8 +26,8 @@ DWORD DrvCall::ResetPktRedirFilter(
 }
 DWORD DrvCall::GetAdapterCurrentAddress( 
 	HANDLE hAdapterHandle, 
-	PNDIS_STATUS pNdisStatus, 
-	PNDIS_MEDIUM pNdisMedium, // Optional. May be NULL. 
+	int * pNdisStatus, 
+	void * pNdisMedium, // Optional. May be NULL. 
 	PUCHAR pAdapterAddress, 
 	PULONG pAddressLength 
 	)
@@ -47,7 +47,7 @@ DWORD DrvCall::GetDriverCapability(
 }
 
 DWORD DrvCall::EnumerateBindings( 
-	PNDIS_STATUS pNdisStatus, 
+	int * pNdisStatus, 
 	PWCHAR pBuffer, 
 	PUINT pBufferSize // On entry this must point to size of buffer. 
 	)
@@ -72,7 +72,7 @@ HANDLE DrvCall::OpenLowerAdapter(const TCHAR *pszAdapterName )
 
 DWORD DrvCall::GetAdapterVendorDescription( 
 	HANDLE hAdapterHandle, 
-	PNDIS_STATUS pNdisStatus, 
+	int * pNdisStatus, 
 	TCHAR *lpBuffer, 
 	LPDWORD pBufferSize // Bytes at lpBuffer 
 	){

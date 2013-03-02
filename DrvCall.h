@@ -1,8 +1,7 @@
 #ifndef _H_CLS_DRVCALL
 #define  _H_CLS_DRVCALL
 #include "main.h"
-#include "ntddndis.h"
-#include <process.h>
+//#include <process.h>
 #include "winsock.h"
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
@@ -16,7 +15,7 @@ typedef DWORD
 typedef  DWORD  
 	(WINAPI*   PCASIM_EnumerateBindings)( 
 	HANDLE hWDMHandle, 
-	PNDIS_STATUS pNdisStatus, 
+	int * pNdisStatus, 
 	PWCHAR pBuffer, 
 	PUINT pBufferSize // On entry this must point to size of buffer. 
 	); 
@@ -30,7 +29,7 @@ typedef HANDLE ( WINAPI*
 typedef DWORD (WINAPI *
 			   PCASIM_GetAdapterVendorDescription)( 
 			   HANDLE hAdapterHandle, 
-			   PNDIS_STATUS pNdisStatus, 
+			   int * pNdisStatus, 
 			   TCHAR *lpBuffer, 
 			   LPDWORD pBufferSize // Bytes at lpBuffer 
 			   ); 
@@ -38,8 +37,8 @@ typedef DWORD (WINAPI *
 typedef DWORD ( WINAPI *
 			   PCASIM_GetAdapterCurrentAddress)( 
 			   HANDLE hAdapterHandle, 
-			   PNDIS_STATUS pNdisStatus, 
-			   PNDIS_MEDIUM pNdisMedium, // Optional. May be NULL. 
+			   int * pNdisStatus, 
+			   void * pNdisMedium, // Optional. May be NULL. 
 			   PUCHAR pAdapterAddress, 
 			   PULONG pAddressLength 
 			   ); 
@@ -79,8 +78,8 @@ class DrvCall
 			HANDLE hAdapter );
 		static DWORD GetAdapterCurrentAddress( 
 			HANDLE hAdapterHandle, 
-			PNDIS_STATUS pNdisStatus, 
-			PNDIS_MEDIUM pNdisMedium, // Optional. May be NULL. 
+			int * pNdisStatus, 
+			void * pNdisMedium, // Optional. May be NULL. 
 			PUCHAR pAdapterAddress, 
 			PULONG pAddressLength 
 			); 
@@ -91,7 +90,7 @@ class DrvCall
 
 		static DWORD  
 			EnumerateBindings( 
-			PNDIS_STATUS pNdisStatus, 
+			int * pNdisStatus, 
 			PWCHAR pBuffer, 
 			PUINT pBufferSize // On entry this must point to size of buffer. 
 			); 
@@ -103,7 +102,7 @@ class DrvCall
 
 		static DWORD GetAdapterVendorDescription( 
 			HANDLE hAdapterHandle, 
-			PNDIS_STATUS pNdisStatus, 
+			int * pNdisStatus, 
 			TCHAR *lpBuffer, 
 			LPDWORD pBufferSize // Bytes at lpBuffer 
 			); 
