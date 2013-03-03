@@ -28,7 +28,7 @@ uint BindList::err=0;
 
 	if(ret)
 	{
-		BindList::err=0;
+		BindList::err=ret;
 		return NULL;
 	}
 	status=0;
