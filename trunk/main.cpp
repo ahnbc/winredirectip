@@ -233,15 +233,15 @@ const static UCHAR TCP_PRO=6,UDP_PRO=17;
 	 
 	UCHAR ip_len;
 	if(dwErrorCode!=0)return;
-	  if(dwNumberOfBytesTransfered>=14+20)
+	  if(dwNumberOfBytesTransfered>=(14+20))
 	 {
 		
-		proto_3=*(USHORT * )Inbuff+14;
+		proto_3=*(USHORT * )(Inbuff+12);
 		if(proto_3==IP_PRO)
 			ip_offset=LEN_ENT;
 		else if(proto_3==PPPOE_PRO)
 		{
-			ppp_next_pro=*(USHORT *)Inbuff+LEN_ENT+6;
+			ppp_next_pro=*(USHORT *)(Inbuff+LEN_ENT+6);
 			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
 			else goto __in_write;
 		}
@@ -295,15 +295,15 @@ if(proto_4==TCP_PRO)
 	 UCHAR ip_len;
 	 if(dwErrorCode!=0)return;
 	//printf("OutIO\n");
-	 if(dwNumberOfBytesTransfered>=14+20)
+	 if(dwNumberOfBytesTransfered>=(14+20))
 	 {
 		
-		proto_3=*(USHORT * )Outbuff+14;
+		proto_3=*(USHORT * )(Outbuff+12);
 		if(proto_3==IP_PRO)
 			ip_offset=LEN_ENT;
 		else if(proto_3==PPPOE_PRO)
 		{
-			ppp_next_pro=*(USHORT *)Outbuff+LEN_ENT+6;
+			ppp_next_pro=*(USHORT *)(Outbuff+LEN_ENT+6);
 			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
 			else goto __out_write;
 		}
@@ -313,7 +313,7 @@ if(proto_4==TCP_PRO)
 //
 		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
 		*(ushort *)(Outbuff+ip_offset+10)=0;
-		*((uint *)(Outbuff+ip_offset+12))=rediIP;
+		*((uint *)(Outbuff+ip_offset+16))=rediIP;
 		sum=ip_checksum((ushort *)(Outbuff+ip_offset),ip_len);
 		*(ushort *)(Outbuff+ip_offset+10)=sum;
 
