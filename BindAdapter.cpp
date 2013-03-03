@@ -7,6 +7,7 @@ BindAdapter::BindAdapter(const char *vname,const char *name)
 	vAdapter=vname;
 	Adapter=name;
 	type=0;
+	InBound=OutBound=NULL;
 	//其他的按初始化
 }
 const string *  BindAdapter::getvName() const
@@ -105,4 +106,32 @@ const string  *BindAdapter::getMac() const
 {
 	
 	return &Mac_str;
+}
+
+
+UINT BindAdapter::CloseInHandle() const
+{
+	BindAdapter * use_in_care=const_cast<BindAdapter *>(this);
+	if(InBound==0)return 0;
+	CloseHandle(InBound);
+	use_in_care->InBound=0;
+	return 0;
+}
+
+UINT BindAdapter::CloseOutHandle() const
+{
+	BindAdapter * use_in_care=const_cast<BindAdapter *>(this);
+	if(OutBound==0)return 0;
+	CloseHandle(OutBound);
+	use_in_care->OutBound=0;
+	return 0;
+}
+
+
+UINT BindAdapter::CloseHandles() const
+{
+	UINT ret=0;
+	if((ret=CloseOutHandle())||(ret=CloseInHandle()))
+		return ret;
+	return 0;
 }

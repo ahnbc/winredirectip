@@ -17,6 +17,7 @@ class BindList
 	uint getSize();
 	const vector<BindAdapter> *getLists() const;
 	private:
+	
 	static BindList _self;
 	static uint err;
 	vector <BindAdapter> Adapters;
