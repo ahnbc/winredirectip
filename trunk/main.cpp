@@ -233,7 +233,7 @@ const static UCHAR TCP_PRO=6,UDP_PRO=17;
 	 
 	UCHAR ip_len;
 	if(dwErrorCode!=0)return;
-	  if(dwNumberOfBytesTransfered>=14+20+20)
+	  if(dwNumberOfBytesTransfered>=14+20)
 	 {
 		
 		proto_3=*(USHORT * )Inbuff+14;
@@ -243,9 +243,9 @@ const static UCHAR TCP_PRO=6,UDP_PRO=17;
 		{
 			ppp_next_pro=*(USHORT *)Inbuff+LEN_ENT+6;
 			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
-			else return;
+			else goto __in_write;
 		}
-		else 	return;
+		else 	goto __in_write;
 		proto_4=*(Inbuff+ip_offset+9);
 	//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
 //
@@ -271,9 +271,10 @@ if(proto_4==TCP_PRO)
 
 		*(ushort *)(Inbuff+tcp_offset+16)=sum;
 }
+
 	 }
 	 
-	  
+	  __in_write:
 
 	 if(0==WriteFileEx(OutHandle,Inbuff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine))
 		 {
@@ -294,7 +295,7 @@ if(proto_4==TCP_PRO)
 	 UCHAR ip_len;
 	 if(dwErrorCode!=0)return;
 	//printf("OutIO\n");
-	 if(dwNumberOfBytesTransfered>=14+20+20)
+	 if(dwNumberOfBytesTransfered>=14+20)
 	 {
 		
 		proto_3=*(USHORT * )Outbuff+14;
@@ -304,15 +305,15 @@ if(proto_4==TCP_PRO)
 		{
 			ppp_next_pro=*(USHORT *)Outbuff+LEN_ENT+6;
 			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
-			else return;
+			else goto __out_write;
 		}
-		else 	return;
+		else 	 goto __out_write;
 		proto_4=*(Outbuff+ip_offset+9);
 	//	if(proto_4!=TCP_PRO)return;
 //
 		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
 		*(ushort *)(Outbuff+ip_offset+10)=0;
-		*((uint *)(Outbuff+ip_offset+12))=orgIP;
+		*((uint *)(Outbuff+ip_offset+12))=rediIP;
 		sum=ip_checksum((ushort *)(Outbuff+ip_offset),ip_len);
 		*(ushort *)(Outbuff+ip_offset+10)=sum;
 
@@ -334,7 +335,7 @@ if(proto_4==TCP_PRO)
 }
 	 }
 
-
+	 __out_write:
 	 if(0==WriteFileEx(InHandle,Outbuff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine))
 		 {
 		EnterCriticalSection(&cs);
@@ -458,8 +459,8 @@ UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[])
 {
 	
 	int i=0,size=0,j=0,ret=0;
-	BindList *list;
-	BindAdapter *adp;
+	 BindList *list;
+	const BindAdapter *adp;
 	InitializeCriticalSection(&cs);
 	ret=DrvCall::Init();
 	if(ret)return ret;
@@ -540,8 +541,8 @@ int  main(int argc,char ** argv)
 	//221.231.130.70
 	//uchar mIP[4]={60,176,43,163};
 	uint ret=0;
-	BindList *list;
-	std::vector <BindAdapter>::iterator it;
+	 BindList *list;
+	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
 	
 

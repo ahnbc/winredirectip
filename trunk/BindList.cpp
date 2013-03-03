@@ -3,7 +3,7 @@
 #include "string.h"
 BindList BindList::_self=BindList();
 uint BindList::err=0;
-BindList * BindList::getAllBindList()
+ BindList * BindList::getAllBindList()
 {
 	uint ret,i,j;
 	int status;
@@ -172,28 +172,28 @@ uint BindList::GetError()
 {
 	return BindList::err;
 }
-BindAdapter * BindList::getByMac(string mac)
+const BindAdapter * BindList::getByMac(string mac) const
 {
-	vector<BindAdapter>::iterator it;
+	vector<BindAdapter>::const_iterator it;
 	for(it=Adapters.begin();it!=Adapters.end();it++)
 		if(it->isSameMac(mac))return &(*it);
 	return NULL;
 }
-BindAdapter * BindList::getByIP(string ip)
+const BindAdapter * BindList::getByIP(string ip)  const
 {
-	vector<BindAdapter>::iterator it;
+	vector<BindAdapter>::const_iterator it;
 	for(it=Adapters.begin();it!=Adapters.end();it++)
 		if(it->isSameIP(ip))return &(*it);
 	return NULL;
 }
-BindAdapter * BindList::getByName(string s)
+const BindAdapter * BindList::getByName(string s)  const
 {
-	vector<BindAdapter>::iterator it;
+	vector<BindAdapter>::const_iterator it;
 	for(it=Adapters.begin();it!=Adapters.end();it++)
 		if((*it->getName())==s)return &(*it);
 	return NULL;
 }
-vector<BindAdapter> *BindList::getLists()
+const vector<BindAdapter> *BindList::getLists() const
 {
 	return &Adapters;
 }
