@@ -9,19 +9,19 @@ BindAdapter::BindAdapter(const char *vname,const char *name)
 	type=0;
 	//其他的按初始化
 }
-const string *  BindAdapter::getvName()
+const string *  BindAdapter::getvName() const
 {
 	return &vAdapter;
 }
-const string *  BindAdapter::getName()
+const string *  BindAdapter::getName() const
 {
 	return &Adapter;
 }
-const string *  BindAdapter::getDesc()
+const string *  BindAdapter::getDesc() const
 {
 	return &Desc;
 }
-const string *  BindAdapter::getIp()
+const string *  BindAdapter::getIp() const
 {
 	return &IP;
 }
@@ -58,13 +58,13 @@ void BindAdapter::setType(UINT s)
 {
 	type=s;
 }
-BOOL BindAdapter::isSameMac(string s)
+BOOL BindAdapter::isSameMac(string s) const
 {
 	USHORT r[3];
 	strMacConv(s,r);
 	return isSameMac((USHORT *)r);
 }
-BOOL BindAdapter::isSameMac(USHORT * s)
+BOOL BindAdapter::isSameMac(USHORT * s) const
 {
 	int i=0;
 	for(i=0;i<3;i++)
@@ -72,11 +72,11 @@ BOOL BindAdapter::isSameMac(USHORT * s)
 	return i==3;
 
 }
-BOOL BindAdapter::isSameIP(string s)
+BOOL BindAdapter::isSameIP(string s) const
 {
 	return s==IP;
 }
-UINT BindAdapter::strMacConv(string s,USHORT *m)
+UINT BindAdapter::strMacConv(string s,USHORT *m) 
 {
 	char c[3]={0};
 	int i=0;
@@ -90,7 +90,7 @@ UINT BindAdapter::strMacConv(string s,USHORT *m)
 	}
 	return 0;
 }
-UINT BindAdapter::MactoStr(USHORT * m ,char *s)
+UINT BindAdapter::MactoStr(USHORT * m ,char *s) 
 {
 	uchar *mac=(uchar *)m;
 	int i=0;
@@ -101,7 +101,7 @@ UINT BindAdapter::MactoStr(USHORT * m ,char *s)
 	s[12]=0;
 	return 0;
 }
-const string  *BindAdapter::getMac()
+const string  *BindAdapter::getMac() const
 {
 	
 	return &Mac_str;

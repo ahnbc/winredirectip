@@ -9,13 +9,13 @@ class BindList
 {
 	public:
 	
-	static BindList *getAllBindList();
-	BindAdapter * getByMac(string mac);
-	BindAdapter * getByIP(string ip);
-	BindAdapter * getByName(string s);
+	static  BindList *getAllBindList();
+	const BindAdapter * getByMac(string mac)const ;
+	const BindAdapter * getByIP(string ip) const;
+	const BindAdapter * getByName(string s) const;
 	static uint GetError();
 	uint getSize();
-	vector<BindAdapter> *getLists();
+	const vector<BindAdapter> *getLists() const;
 	private:
 	static BindList _self;
 	static uint err;
