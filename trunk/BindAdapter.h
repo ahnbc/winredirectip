@@ -24,10 +24,33 @@ public:
 	void setMac(const USHORT *);
 	void setDesc(const char *);
 	void setType(UINT);
+   // BindAdapter * WantSet() const; //use only want closehandle
+
+
 	BOOL isSameMac(string) const;
 	BOOL isSameMac(USHORT *) const;
 	BOOL isSameIP(string) const;
+
+	UINT OpenHandle();
+	UINT OpenInBound();
+	UINT OpenOutBound();
+
+	UINT ResetHook() const;
+	UINT ResetInHook() const;
+	UINT ResetOutHook() const;
+
+	UINT SetHook() const;
+	UINT SetInHook() const;
+	UINT SetOutHook() const;
+
+   
+	UINT CloseHandles() const;
+	UINT CloseInHandle() const;
+	UINT CloseOutHandle() const;
+
+
 private:
+	HANDLE InBound,OutBound;
 	string  vAdapter;
 	string  Adapter;
 	USHORT Mac[3];
