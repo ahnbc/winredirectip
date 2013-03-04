@@ -10,6 +10,9 @@
 #include "BindAdapter.h"
 #include "BindList.h"
 #include "vector"
+#include "getopt.h"
+
+
 
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -24,15 +27,16 @@ LPOVERLAPPED lpOverlapped
 ); 
 */
 
-
-static HANDLE InHandle=NULL,InThread;
-static HANDLE OutHandle=NULL,OutThread;
+const BindAdapter *adp=NULL;
+static HANDLE InThread;
+static HANDLE OutThread;
 static HANDLE MainThread=NULL;
 unsigned  InID,OutID,MainID;
 //static byte Inbuff[0x1000];
 //static byte Outbuff[0x1000];
 static  uint orgIP=0;//={221,231,130,70};
-
+static USHORT port=0;
+static UCHAR protocol=0;
 //static const BYTE sdip[4]={207,56,113,28};
 static const char *DevName=0;
 static const char *vDevName=0;
@@ -145,20 +149,8 @@ void AtExit(void)
 	DWORD code,ret;
 	DeleteCriticalSection(&cs);
 	DrvCall::Init();
-	if(InHandle!=NULL)
-	{
-
-		DrvCall::ResetPktRedirFilter(InHandle);
-		CloseHandle(InHandle);
-		InHandle=0;
-	}
-	if(OutHandle!=NULL)
-	{
-
-		DrvCall::ResetPktRedirFilter(OutHandle);
-		CloseHandle(OutHandle);
-		OutHandle=0;
-	}
+	adp->ResetHook();
+	adp->BeginRequest()->CloseHandles();
 	ret=GetExitCodeThread(InThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
@@ -189,7 +181,7 @@ VOID CALLBACK InIOWriteCompletionRoutine(
  {
 	byte *Inbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	 if(dwErrorCode!=0)return;
-	 if(ReadFileEx(InHandle,Inbuff,0x1000,lpOverlapped,InIOReadCompletionRoutine)==0)
+	 if(adp->ReadInEx(Inbuff,0x1000,lpOverlapped,InIOReadCompletionRoutine)==0)
 	 {
 		 EnterCriticalSection(&cs);
 		 printf("InIOWriteCompletionRoutine Last Error:%d\n",GetLastError());
@@ -206,7 +198,7 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
 
 	byte *Outbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	 if(dwErrorCode!=0)return;
-	 if(0==ReadFileEx(OutHandle,Outbuff,0x1000,lpOverlapped,OutIOReadCompletionRoutine))
+	 if(0==adp->ReadOutEx(Outbuff,0x1000,lpOverlapped,OutIOReadCompletionRoutine))
 	 {
 		 EnterCriticalSection(&cs);
 		 printf("OutIOWriteCompletionRoutine Last Error:%d\n",GetLastError());
@@ -247,9 +239,24 @@ const static UCHAR TCP_PRO=6,UDP_PRO=17;
 		}
 		else 	goto __in_write;
 		proto_4=*(Inbuff+ip_offset+9);
+		ip_len=((*(Inbuff+ip_offset))&0x0f)<<2;
+		tcp_offset=ip_offset+ip_len;
 	//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
 //
-		ip_len=((*(Inbuff+ip_offset))&0x0f)<<2;
+		if(proto_4==TCP_PRO&&protocol==2)
+		{
+			goto __in_write;
+		}
+		if(proto_4==UDP_PRO&&protocol==1)
+		{
+			goto __in_write;
+		}
+		if(port!=0&&*(USHORT *)(Inbuff+tcp_offset)!=ntohs(port))
+		{
+				goto __in_write;
+		}
+
+		
 		*(ushort *)(Inbuff+ip_offset+10)=0;
 		*((uint *)(Inbuff+ip_offset+12))=orgIP;
 		sum=ip_checksum((ushort *)(Inbuff+ip_offset),ip_len);
@@ -257,7 +264,7 @@ const static UCHAR TCP_PRO=6,UDP_PRO=17;
 
 if(proto_4==TCP_PRO)
 {
-		tcp_offset=ip_offset+ip_len;
+		
 		ip_all_len=htons(*((uint *)(Inbuff+ip_offset+2)));
 		tcp_all_len=ip_all_len-ip_len;
 	 //
@@ -276,7 +283,7 @@ if(proto_4==TCP_PRO)
 	 
 	  __in_write:
 
-	 if(0==WriteFileEx(OutHandle,Inbuff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine))
+	 if(0==adp->WriteOutEx(Inbuff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine))
 		 {
 		  EnterCriticalSection(&cs);
 		  printf("InIOReadCompletionRoutine Last Error:%d\n",GetLastError());
@@ -309,9 +316,26 @@ if(proto_4==TCP_PRO)
 		}
 		else 	 goto __out_write;
 		proto_4=*(Outbuff+ip_offset+9);
+		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
+		tcp_offset=ip_offset+ip_len;
 	//	if(proto_4!=TCP_PRO)return;
 //
-		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
+
+
+		if(proto_4==TCP_PRO&&protocol==2)
+		{
+			goto __out_write;
+		}
+		if(proto_4==UDP_PRO&&protocol==1)
+		{
+			goto __out_write;
+		}
+		if(port!=0&&*(USHORT *)(Outbuff+tcp_offset+2)!=ntohs(port))
+		{
+			goto __out_write;
+		}
+
+		
 		*(ushort *)(Outbuff+ip_offset+10)=0;
 		*((uint *)(Outbuff+ip_offset+16))=rediIP;
 		sum=ip_checksum((ushort *)(Outbuff+ip_offset),ip_len);
@@ -319,7 +343,7 @@ if(proto_4==TCP_PRO)
 
 if(proto_4==TCP_PRO)
 {
-		tcp_offset=ip_offset+ip_len;
+		
 		ip_all_len=htons(*((uint *)(Outbuff+ip_offset+2)));
 		tcp_all_len=ip_all_len-ip_len;
 	 //
@@ -336,7 +360,7 @@ if(proto_4==TCP_PRO)
 	 }
 
 	 __out_write:
-	 if(0==WriteFileEx(InHandle,Outbuff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine))
+	 if(0==adp->WriteInEx(Outbuff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine))
 		 {
 		EnterCriticalSection(&cs);
 		printf("OutIOReadCompletionRoutine Last Error:%d\n",GetLastError()) ;
@@ -347,7 +371,7 @@ static unsigned __stdcall InWork(void * pList)
 {
 	uint ret,i;
 	byte *(buff[0x40]),*Inbuff;
-	ret=DrvCall::SetPktRedirFilter(InHandle,&inent,1);
+	ret=adp->SetInHook(&inent,1);
 	if(ret!=0)
 		return 0xFF;
 	EnterCriticalSection(&cs);
@@ -355,11 +379,11 @@ static unsigned __stdcall InWork(void * pList)
 	LeaveCriticalSection(&cs);
 	for(i=0;i<0x40;i++)
 	{
-		if(InHandle==0)break;
+		if(!adp->isInHandleOpen())break;
 		buff[i]=(byte *)malloc(0x1000+sizeof(OVERLAPPED));//让系统自动回收
 		Inbuff=buff[i]+sizeof(OVERLAPPED);
 		memset(buff[i],0,sizeof(OVERLAPPED));
-		ret=ReadFileEx(InHandle,Inbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine);
+		ret=adp->ReadInEx(Inbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine);
 		//printf("inwork:%d\n",ret);
 		if(ret==0)
 		{
@@ -372,7 +396,7 @@ static unsigned __stdcall InWork(void * pList)
 	while(1)
 	{
 		SleepEx(0x1f4,1);
-		if(InHandle==0)break;
+		if(!adp->isInHandleOpen())break;
 	}
 		for(i=0;i<0x40;i++)
 	{
@@ -385,7 +409,7 @@ static unsigned __stdcall OutWork(void * pList)
 {
 	uint ret,i;
 	byte *(buff[0x40]),*Outbuff;
-	ret=DrvCall::SetPktRedirFilter(OutHandle,&outent,1);
+	ret=adp->SetOutHook(&outent,1);
 	if(ret!=0)
 	{
 		return 0xFF;
@@ -395,11 +419,11 @@ static unsigned __stdcall OutWork(void * pList)
 	LeaveCriticalSection(&cs);
 	for(i=0;i<0x40;i++)
 	{
-		if(OutHandle==0)break;
+		if(!adp->isOutHandleOpen())break;
 		buff[i]=(byte *) malloc(0x1000+sizeof(OVERLAPPED));
 		Outbuff=buff[i]+sizeof(OVERLAPPED);
 		memset(buff[i],0,sizeof(OVERLAPPED));
-		ret=ReadFileEx(OutHandle,Outbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine);
+		ret=adp->ReadOutEx(Outbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine);
 		//printf("outwork:%d\n",ret);
 		if(ret==0)
 		{
@@ -412,7 +436,7 @@ static unsigned __stdcall OutWork(void * pList)
 		while(1)
 	{
 		SleepEx(0x1f4,1);
-		if(OutHandle==0)break;
+		if(!adp->isOutHandleOpen())break;
 	}
 		for(i=0;i<0x40;i++)
 	{
@@ -455,13 +479,15 @@ static unsigned __stdcall MainWork(void * pList)
 	return 0;
 }
 
-UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[])
+UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[],UCHAR proto,USHORT fport)
 {
 	
 	int i=0,size=0,j=0,ret=0;
-	 BindList *list;
-	const BindAdapter *adp;
+	BindList *list;
+	
 	InitializeCriticalSection(&cs);
+	protocol=proto;
+	port=fport;
 	ret=DrvCall::Init();
 	if(ret)return ret;
 	list=BindList::getAllBindList();
@@ -485,24 +511,19 @@ UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[])
 		//if err20??
 		return 20;
 	}
-	DevName=adp->getName()->c_str();
-	vDevName=adp->getvName()->c_str();
-	InHandle=DrvCall::OpenLowerAdapter(DevName);
+	ret=adp->BeginRequest()->OpenHandles();
+	//DevName=adp->getName()->c_str();
+	//vDevName=adp->getvName()->c_str();
+	//InHandle=DrvCall::OpenLowerAdapter(DevName);
 //	pPCASIM_OpenVirtualAdapter(DevName);
 //	OutHandle=pPCASIM_OpenLowerAdapter(DevName);
-	OutHandle=DrvCall::OpenVirtualAdapter(vDevName);
+	//OutHandle=DrvCall::OpenVirtualAdapter(vDevName);
 //	printf("handle :%d,%d\n",InHandle,OutHandle);
-	if(InHandle==NULL||InHandle==INVALID_HANDLE_VALUE)
+	if(ret)
 	{
 		//err 9 In句柄获取失败
-		InHandle=NULL;
+		adp->BeginRequest()->CloseHandles();
 		return 9;
-	}
-	if(OutHandle==NULL||OutHandle==INVALID_HANDLE_VALUE)
-	{
-		//err 10 out句柄获取失败
-		OutHandle=NULL;
-		return 10;
 	}
 	
 	orgIP=inet_addr(orIP);
@@ -541,10 +562,14 @@ int  main(int argc,char ** argv)
 	//221.231.130.70
 	//uchar mIP[4]={60,176,43,163};
 	uint ret=0;
-	 BindList *list;
+	int ch,margc=0;
+	char * margv[10];
+	BindList *list;
+	USHORT mPort;
+	UCHAR mPro;
 	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
-	
+
 
 if(argc ==1){
 	list=BindList::getAllBindList();
@@ -570,17 +595,44 @@ if(argc ==1){
 	system("pause");
 	return 0;
 }
-	 if(argc !=4)
+	margc=0;
+	mPort=0;
+	mPro=0;
+	while(ch=getopt_a(argc,argv,"p:o:")!=-1)
 	{
-		printf("Arguments number is not 4.\n");
+		switch(ch)
+		{
+		case 'p':
+			mPort=(USHORT)atoi(optarg_a);
+			break;
+		case 'o':
+			mPro=(UCHAR)atoi(optarg_a);
+			break;
+		default:
+			if(margc>=10)
+			{
+				perror("Error !!No Why!!!\n");
+				return 0;
+			}
+			margv[margc++]=optarg_a;
+		}
+	}
+	if(mPro>2)
+	{
+		printf("Protocol 1=TCP 2=UDP 0=BOTH .\n");
+		return 0;
+	}
+
+	 if(margc !=3)
+	{
+		printf("Arguments number is not 3.\n");
 		system("pause");
 		return 0;
 	}
 	atexit(AtExit);
-	if(ret=redirIP(argv[1],argv[2],argv[3]))
+	if(ret=redirIP(margv[0],margv[1],margv[2]))
 	{
 		printf("Error Back:%d\n",ret);
-		
 	}
 	else
 	{

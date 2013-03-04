@@ -30,6 +30,9 @@
     <ClInclude Include="DrvCall.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="getopt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="main.def">
@@ -47,6 +50,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="BindAdapter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="getopt.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
