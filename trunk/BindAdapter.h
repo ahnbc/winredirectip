@@ -11,26 +11,26 @@ public:
 	static UINT strMacConv(string,USHORT *) ;
 	static UINT MactoStr(USHORT *,char *) ;
 
-	const string * getvName() const{return &vAdapter;};
-	const string * getName() const{return &Adapter;};
-	const string * getMac() const{return &Mac_str;};
-	const string * getDesc() const{return &Desc;};
-	const string * getIp() const{return &IP;};
-	UINT getType() const {return type;};
+	const string * getvName() const{return &m_svAdapter;};
+	const string * getName() const{return &m_sAdapter;};
+	const string * getMac() const{return &m_sMac;};
+	const string * getDesc() const{return &m_sDesc;};
+	const string * getIp() const{return &m_sIP;};
+	UINT getType() const {return m_nType;};
 
-	void setvName(const char * s){vAdapter=s;};
-	void setName(const char *s){Adapter=s;};
-	void setIp(const char *s){IP=s;};
+	void setvName(const char * s){m_svAdapter=s;};
+	void setName(const char *s){m_sAdapter=s;};
+	void setIp(const char *s){m_sIP=s;};
 	void setMac(const USHORT *);
-	void setDesc(const char *s){Desc=s ;};
-	void setType(UINT s){type=s ;};
+	void setDesc(const char *s){m_sDesc=s ;};
+	void setType(UINT s){m_nType=s ;};
 
 	BindAdapter * BeginRequest() const{return const_cast<BindAdapter *>(this);}; 
 
 
-	BOOL isSameMac(string s) const{return Mac_str==s; };
+	BOOL isSameMac(string s) const{return m_sMac==s; };
 	BOOL isSameMac(USHORT *) const;
-	BOOL isSameIP(string s) const{ return IP==s;};
+	BOOL isSameIP(string s) const{ return m_sIP==s;};
 
 	UINT OpenHandles();
 	UINT OpenInBound();
@@ -51,8 +51,8 @@ public:
 	UINT CloseOutHandle() ;
 
 
-	BOOL isOutHandleOpen() const {return OutBound!=NULL;};
-	BOOL isInHandleOpen() const {return InBound!=NULL;};
+	BOOL isOutHandleOpen() const {return m_hOutBound!=NULL;};
+	BOOL isInHandleOpen() const {return m_hInBound!=NULL;};
 
 
 	UINT WriteInEx(LPCVOID lpBuffer,
@@ -60,8 +60,8 @@ public:
 		LPOVERLAPPED lpOverlapped,
 		LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)const
 	{
-		if(InBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return WriteFileEx(InBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
+		if(m_hInBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return WriteFileEx(m_hInBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
 	}
 	;
 	UINT WriteOutEx(LPCVOID lpBuffer,
@@ -69,16 +69,16 @@ public:
 		LPOVERLAPPED lpOverlapped,
 		LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)const
 	{
-		if(OutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return WriteFileEx(OutBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
+		if(m_hOutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return WriteFileEx(m_hOutBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
 	};
 	UINT WriteIn(LPCVOID lpBuffer,
 		DWORD nNumberOfBytesToWrite,
 		LPDWORD lpNumberOfBytesWritten, 
 		LPOVERLAPPED lpOverlapped)const
 	{
-		if(InBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return WriteFile(InBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
+		if(m_hInBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return WriteFile(m_hInBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
 	}
 	;
 	UINT WriteOut(LPCVOID lpBuffer,
@@ -86,8 +86,8 @@ public:
 		LPDWORD lpNumberOfBytesWritten, 
 		LPOVERLAPPED lpOverlapped)const
 	{
-		if(OutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return WriteFile(OutBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
+		if(m_hOutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return WriteFile(m_hOutBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
 	};
 
 
@@ -96,8 +96,8 @@ public:
 		LPOVERLAPPED lpOverlapped,
 		LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)const
 	{
-		if(InBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return ReadFileEx(InBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
+		if(m_hInBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return ReadFileEx(m_hInBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
 	}
 	;
 	UINT ReadOutEx(LPVOID lpBuffer,
@@ -105,16 +105,16 @@ public:
 		LPOVERLAPPED lpOverlapped,
 		LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)const
 	{
-		if(OutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return ReadFileEx(OutBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
+		if(m_hOutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return ReadFileEx(m_hOutBound,lpBuffer,nNumberOfBytesToWrite,lpOverlapped,lpCompletionRoutine);
 	};
 	UINT ReadIn(LPVOID lpBuffer,
 		DWORD nNumberOfBytesToWrite,
 		LPDWORD lpNumberOfBytesWritten, 
 		LPOVERLAPPED lpOverlapped)const
 	{
-		if(InBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return ReadFile(InBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
+		if(m_hInBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return ReadFile(m_hInBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
 	}
 	;
 	UINT ReadOut(LPVOID lpBuffer,
@@ -122,20 +122,20 @@ public:
 		LPDWORD lpNumberOfBytesWritten, 
 		LPOVERLAPPED lpOverlapped)const
 	{
-		if(OutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
-		return ReadFile(OutBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
+		if(m_hOutBound==NULL){SetLastError(RPC_X_NULL_REF_POINTER);return 0;}
+		return ReadFile(m_hOutBound,lpBuffer,nNumberOfBytesToWrite,lpNumberOfBytesWritten, lpOverlapped);
 	};
 
 
 
 private:
-	HANDLE InBound,OutBound;
-	string  vAdapter;
-	string  Adapter;
-	USHORT Mac[3];
-	string  Desc;
-	string  IP;
-	UINT type;
-	string Mac_str;
+	HANDLE m_hInBound,m_hOutBound;
+	string  m_svAdapter;
+	string  m_sAdapter;
+	USHORT m_Mac[3];
+	string  m_sDesc;
+	string  m_sIP;
+	UINT m_nType;
+	string m_sMac;
 };
 #endif

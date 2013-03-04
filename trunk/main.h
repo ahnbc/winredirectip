@@ -43,10 +43,7 @@ typedef unsigned long u32;
 		const char IOName[]="\\\\.\\PcaIpRedir";
 		
  void  WINAPI Free();
- UINT WINAPI  redirIP(const char [],const char[],const char[],UCHAR proto,USHORT fport);
- UINT WINAPI ListRedirSupportAdptersMac(uchar*,UINT *);
- UINT WINAPI GetvAdpByMac(char *mac,char *buffer,uint *size);
- UINT WINAPI GetlAdpByMac(char *mac,char *buffer,uint *size);
+ UINT WINAPI  redirIP(const char [],const char[],const char[],UCHAR ,USHORT );
  
 #ifdef __cplusplus
 }
