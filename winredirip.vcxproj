@@ -151,12 +151,14 @@
     <ClInclude Include="BindAdapter.h" />
     <ClInclude Include="BindList.h" />
     <ClInclude Include="DrvCall.h" />
+    <ClInclude Include="getopt.h" />
     <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BindAdapter.cpp" />
     <ClCompile Include="BindList.cpp" />
     <ClCompile Include="DrvCall.cpp" />
+    <ClCompile Include="getopt.c" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
