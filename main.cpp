@@ -524,10 +524,9 @@ int  main(int argc,char ** argv)
 	//221.231.130.70
 	//uchar mIP[4]={60,176,43,163};
 	uint ret=0;
-	int ch,margc=0;
-	char * margv[10];
+	int ch;
 	BindList *list;
-	USHORT mg_port;
+	USHORT mPort;
 	UCHAR mPro;
 	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
@@ -541,7 +540,7 @@ if(argc ==1){
 		system("pause");
 		return 0;
 	}
-	printf("Supg_port Adapter List:\n");
+	printf("Support Adapter List:\n");
 	for(it=list->getLists()->begin();it!=list->getLists()->end();it++)
 	{
 		if(!it->getDesc()->empty())
@@ -557,42 +556,34 @@ if(argc ==1){
 	system("pause");
 	return 0;
 }
-	margc=0;
-	mg_port=0;
+	mPort=0;
 	mPro=0;
 	while(ch=getopt_a(argc,argv,"p:o:")!=-1)
 	{
 		switch(ch)
 		{
 		case 'p':
-			mg_port=(USHORT)atoi(optarg_a);
+			mPort=(USHORT)atoi(optarg_a);
 			break;
 		case 'o':
 			mPro=(UCHAR)atoi(optarg_a);
 			break;
-		default:
-			if(margc>=10)
-			{
-				perror("Error !!No Why!!!\n");
-				return 0;
-			}
-			margv[margc++]=optarg_a;
 		}
 	}
 	if(mPro>2)
 	{
-		printf("g_protocol 1=TCP 2=UDP 0=BOTH .\n");
+		printf("Protocol 1=TCP 2=UDP 0=BOTH .\n");
 		return 0;
 	}
 
-	 if(margc !=3)
+	 if((argc-optind) !=3)
 	{
 		printf("Arguments number is not 3.\n");
 		system("pause");
 		return 0;
 	}
 	atexit(AtExit);
-	if(ret=redirIP(margv[0],margv[1],margv[2],mPro,mg_port))
+	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
 		printf("Error Back:%d\n",ret);
 	}
