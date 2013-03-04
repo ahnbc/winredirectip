@@ -21,3 +21,5 @@
     有\DEVICE\NDISWANIP 的，可直接使用这个
   * 以3个参数的方式 运行本 程序，第一个参数 网卡接口信息字符(MAC或IP或设备名)
 第二个参数 要重定向的源ip，第三个参数 目标ip
+    如 xxx.exe  [-p 协议] [-o 端口] \DEVICE\xxxx ip ip
+   默认 协议=0 tcp+udp 端口 0 所有端口
