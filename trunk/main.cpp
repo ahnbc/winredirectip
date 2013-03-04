@@ -359,7 +359,10 @@ __write:
 	 ent=(byDirect==IN_DIRECT?
 		 &g_Inent:&g_Outent
 		 );
-	 ret=g_cpAdp->SetInHook(ent,1);
+	 ret=(byDirect==IN_DIRECT?
+		 g_cpAdp->SetInHook(ent,1):
+		g_cpAdp->SetOutHook(ent,1)
+	 );
 	 if(ret!=0)
 		 return 0xFF;
 	 EnterCriticalSection(&cs);
@@ -373,7 +376,7 @@ __write:
 		 memset(buff[i],0,sizeof(OVERLAPPED));
 		 ret=(byDirect==IN_DIRECT?
 			 g_cpAdp->ReadInEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine):
-			 ret=g_cpAdp->ReadOutEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine)
+			 g_cpAdp->ReadOutEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine)
 			 );
 		 if(ret==0)
 		 {

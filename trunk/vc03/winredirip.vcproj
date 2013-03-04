@@ -200,6 +200,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\getopt.c">
+			</File>
+			<File
 				RelativePath="..\main.cpp">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -229,6 +232,9 @@
 			</File>
 			<File
 				RelativePath="..\DrvCall.h">
+			</File>
+			<File
+				RelativePath="..\getopt.h">
 			</File>
 			<File
 				RelativePath="..\main.h">
