@@ -68,8 +68,8 @@ class DrvCall
 		static PCASIM_GetDriverCapability pPCASIM_GetDriverCapability;
 		static PCASIM_GetAdapterVendorDescription pPCASIM_GetAdapterVendorDescription;
 		static PCASIM_SetPktRedirFilter pPCASIM_SetPktRedirFilter;
-		static HANDLE mainIo;
-		static HINSTANCE  lib;
+		static HANDLE s_mainIo;
+		static HINSTANCE  s_lib;
 	public:
 		static DWORD SetPktRedirFilter(HANDLE hAdapter, 
 			PPKT_REDIR_FILTER_ENTRY pPktRedirFilterList, 

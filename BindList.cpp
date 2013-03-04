@@ -1,8 +1,8 @@
 #include "BindList.h"
 #include "DrvCall.h"
 #include "string.h"
-BindList BindList::_self=BindList();
-uint BindList::err=0;
+BindList BindList::s_self=BindList();
+uint BindList::s_err=0;
  BindList * BindList::getAllBindList()
 {
 	uint ret,i,j;
@@ -19,16 +19,16 @@ uint BindList::err=0;
 	vector<BindAdapter>::iterator it;
 
 	//--------------------------------------------
-	if(BindList::_self.Adapters.size()>0)
+	if(s_self.m_Adapters.size()>0)
 	{
-		BindList::err=0;
-		return &BindList::_self;
+		s_err=0;
+		return &s_self;
 	}
 	ret=DrvCall::Init();
 
 	if(ret)
 	{
-		BindList::err=ret;
+		s_err=ret;
 		return NULL;
 	}
 	status=0;
@@ -37,13 +37,13 @@ uint BindList::err=0;
 	if(DrvCall::EnumerateBindings(&status,NULL,&size)!=0)
 	{
 		//err 4 无法查询绑定接口
-		BindList::err=4;
+		s_err=4;
 		return NULL;
 	}
 	if(status!=0&&status!=(int)0xC0010016)
 	{
 		//err 5 结果状态错误
-		BindList::err=5;
+		s_err=5;
 		return NULL;
 	}
 	rawbuff=(WCHAR *)malloc(size);
@@ -52,13 +52,13 @@ uint BindList::err=0;
 	{
 		//err 6 获取buff错误
 		free(rawbuff);
-		BindList::err=6;
+		s_err=6;
 		return NULL;
 	}
 	if(status!=0)
 	{
 		//err 7 结果状态错误
-		BindList::err=7;
+		s_err=7;
 		free(rawbuff);
 		return NULL;
 	}
@@ -70,20 +70,20 @@ uint BindList::err=0;
 		//	printf("Char Error\n");
 			free(buff);
 		free(rawbuff);
-		BindList::err=8;
+		s_err=8;
 		return NULL;
 	}
 	for(i=0;i<size/2-1;i++)
 	{
 		j=(DWORD)strlen(buff+i);
-		BindList::_self.Adapters.push_back(BindAdapter(buff+i,buff+i+j+1));
+		s_self.m_Adapters.push_back(BindAdapter(buff+i,buff+i+j+1));
 		i+=j+1;
 		j=(DWORD)strlen(buff+i);
 		i+=j;
 	}
 
 	//获取mac地址
-	for(it=BindList::_self.Adapters.begin();it!=BindList::_self.Adapters.end();it++)
+	for(it=s_self.m_Adapters.begin();it!=s_self.m_Adapters.end();it++)
 	{
 		hAdp=DrvCall::OpenLowerAdapter(it->getName()->c_str());
 		if(hAdp==INVALID_HANDLE_VALUE)
@@ -91,7 +91,7 @@ uint BindList::err=0;
 				{
 					free(buff);
 					free(rawbuff);
-					BindList::err=15;
+					s_err=15;
 					return NULL;
 				}
 		status=0;
@@ -101,7 +101,7 @@ uint BindList::err=0;
 				free(buff);
 				free(rawbuff);
 						//err 18
-				BindList::err=18;
+				s_err=18;
 				return NULL;
 			};
 		if(status!=0)
@@ -109,7 +109,7 @@ uint BindList::err=0;
 				free(buff);
 				free(rawbuff);
 						//err 16 ??
-				BindList::err=16;
+				s_err=16;
 				return NULL;
 			}
 		if(ret>0)
@@ -127,7 +127,7 @@ uint BindList::err=0;
 	if (pAdapterInfo == NULL) {
 		//err 13 内存申请不足
 		//	printf("Error allocating memory needed to call GetAdaptersinfo\n");
-		BindList::err=13;
+		s_err=13;
 		return NULL;
 	}
 	// Make an initial call to GetAdaptersInfo to get
@@ -137,7 +137,7 @@ uint BindList::err=0;
 		pAdapterInfo = (IP_ADAPTER_INFO *) malloc(ulOutBufLen);
 		if (pAdapterInfo == NULL) {
 			//printf("Error allocating memory needed to call GetAdaptersinfo\n");
-			BindList::err=13;
+			s_err=13;
 			return NULL;
 		}
 	}
@@ -148,7 +148,7 @@ uint BindList::err=0;
 		for (;pAdapter!=NULL;pAdapter = pAdapter->Next) {
 			if(pAdapter->AddressLength!=6)continue;
 			memcpy(mac,pAdapter->Address,6);
-			for(it=BindList::_self.Adapters.begin();it!=BindList::_self.Adapters.end();it++)
+			for(it=s_self.m_Adapters.begin();it!=s_self.m_Adapters.end();it++)
 			{
 				if(it->isSameMac(mac))
 				{
@@ -159,45 +159,45 @@ uint BindList::err=0;
 			}
 		}
 	} else {
-		BindList::err=19;
+		s_err=19;
 		return NULL;
 		//printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
 	}
 	if (pAdapterInfo)
 		free(pAdapterInfo);
-	return &BindList::_self;
+	return &s_self;
 }
 
 uint BindList::GetError()
 {
-	return BindList::err;
+	return s_err;
 }
 const BindAdapter * BindList::getByMac(string mac) const
 {
 	vector<BindAdapter>::const_iterator it;
-	for(it=Adapters.begin();it!=Adapters.end();it++)
+	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameMac(mac))return &(*it);
 	return NULL;
 }
 const BindAdapter * BindList::getByIP(string ip)  const
 {
 	vector<BindAdapter>::const_iterator it;
-	for(it=Adapters.begin();it!=Adapters.end();it++)
+	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameIP(ip))return &(*it);
 	return NULL;
 }
 const BindAdapter * BindList::getByName(string s)  const
 {
 	vector<BindAdapter>::const_iterator it;
-	for(it=Adapters.begin();it!=Adapters.end();it++)
+	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if((*it->getName())==s)return &(*it);
 	return NULL;
 }
 const vector<BindAdapter> *BindList::getLists() const
 {
-	return &Adapters;
+	return &m_Adapters;
 }
 uint BindList::getSize()
 {
-	return (uint)Adapters.size();
+	return (uint)m_Adapters.size();
 }

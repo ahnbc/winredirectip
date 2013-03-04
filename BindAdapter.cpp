@@ -6,81 +6,29 @@
 #include "DrvCall.h"
 BindAdapter::BindAdapter(const char *vname,const char *name)
 {
-	vAdapter=vname;
-	Adapter=name;
-	type=0;
-	InBound=OutBound=NULL;
+	m_svAdapter=vname;
+	m_sAdapter=name;
+	m_nType=0;
+	m_hInBound=m_hOutBound=NULL;
 	//其他的按初始化
 }
-/*
-const string *  BindAdapter::getvName() const
-{
-	return &vAdapter;
-}
-const string *  BindAdapter::getName() const
-{
-	return &Adapter;
-}
-const string *  BindAdapter::getDesc() const
-{
-	return &Desc;
-}
-const string *  BindAdapter::getIp() const
-{
-	return &IP;
-}
-UINT  BindAdapter::getType()
-{
-	return type;
-}
 
-void BindAdapter::setvName(const char *s)
-{
-	vAdapter=s;
-
-}
-void BindAdapter::setName(const char *s)
-{
-	Adapter=s;
-}
-void BindAdapter::setIp(const char *s)
-{
-	IP=s;
-}*/
 void BindAdapter::setMac(const USHORT *s)
 {
 	char c[13]={0};
-	memcpy(Mac,s,6);
-	MactoStr(Mac,c);
-	Mac_str=string(c);
-}/*
-void BindAdapter::setDesc(const char *s)
-{
-	Desc=s;
+	memcpy(m_Mac,s,6);
+	MactoStr(m_Mac,c);
+	m_sMac=string(c);
 }
-void BindAdapter::setType(UINT s)
-{
-	type=s;
-}
-BOOL BindAdapter::isSameMac(string s) const
-{
-	USHORT r[3];
-	strMacConv(s,r);
-	return isSameMac((USHORT *)r);
-}*/
 BOOL BindAdapter::isSameMac(USHORT * s) const
 {
 	int i=0;
 	for(i=0;i<3;i++)
-		if(s[i]!=Mac[i])break;
+		if(s[i]!=m_Mac[i])break;
 	return i==3;
 
 }
-/*
-BOOL BindAdapter::isSameIP(string s) const
-{
-	return s==IP;
-}*/
+
 UINT BindAdapter::strMacConv(string s,USHORT *m) 
 {
 	char c[3]={0};
@@ -107,24 +55,13 @@ UINT BindAdapter::MactoStr(USHORT * m ,char *s)
 	s[12]=0;
 	return 0;
 }
-/*
-const string  *BindAdapter::getMac() const
-{
-	
-	return &Mac_str;
-}
 
-BindAdapter * BindAdapter::BeginRequest() const 
-{
-	return const_cast<BindAdapter *>(this);
-}
-*/
 UINT BindAdapter::CloseInHandle()
 {
-	if(InBound==NULL)return 0;
-	if(CloseHandle(InBound))
+	if(m_hInBound==NULL)return 0;
+	if(CloseHandle(m_hInBound))
 	{
-	InBound=NULL;
+	m_hInBound=NULL;
 	return 0;
 	}
 	else
@@ -135,10 +72,10 @@ UINT BindAdapter::CloseInHandle()
 
 UINT BindAdapter::CloseOutHandle()
 {
-	if(OutBound==NULL)return 0;
-	if(CloseHandle(OutBound))
+	if(m_hOutBound==NULL)return 0;
+	if(CloseHandle(m_hOutBound))
 	{
-	OutBound=NULL;
+	m_hOutBound=NULL;
 	return 0;
 	}
 	else
@@ -165,22 +102,22 @@ UINT BindAdapter::OpenHandles()
 }
 UINT BindAdapter::OpenInBound()
 {
-	if(InBound!=NULL)return 0;
-	InBound=DrvCall::OpenLowerAdapter(Adapter.c_str());
-	if(InBound==NULL||InBound==INVALID_HANDLE_VALUE)
+	if(m_hInBound!=NULL)return 0;
+	m_hInBound=DrvCall::OpenLowerAdapter(m_sAdapter.c_str());
+	if(m_hInBound==NULL||m_hInBound==INVALID_HANDLE_VALUE)
 	{
-		InBound=NULL;
+		m_hInBound=NULL;
 		return 1;
 	}
 	return 0;
 }
 UINT BindAdapter::OpenOutBound()
 {
-	if(OutBound!=NULL)return 0;
-	OutBound=DrvCall::OpenVirtualAdapter(vAdapter.c_str());
-	if(OutBound==NULL||OutBound==INVALID_HANDLE_VALUE)
+	if(m_hOutBound!=NULL)return 0;
+	m_hOutBound=DrvCall::OpenVirtualAdapter(m_svAdapter.c_str());
+	if(m_hOutBound==NULL||m_hOutBound==INVALID_HANDLE_VALUE)
 	{
-		OutBound=NULL;
+		m_hOutBound=NULL;
 		return 1;
 	}
 	return 0;
@@ -196,24 +133,24 @@ UINT BindAdapter::ResetHook() const
 }
 UINT BindAdapter::ResetInHook() const
 {
-	if(InBound==NULL)return 0;
-	return DrvCall::ResetPktRedirFilter(InBound);
+	if(m_hInBound==NULL)return 0;
+	return DrvCall::ResetPktRedirFilter(m_hInBound);
 }
 UINT BindAdapter::ResetOutHook() const
 {
-	if(OutBound==NULL)return 0;
-	return DrvCall::ResetPktRedirFilter(OutBound);
+	if(m_hOutBound==NULL)return 0;
+	return DrvCall::ResetPktRedirFilter(m_hOutBound);
 }
 
 
 UINT BindAdapter::SetInHook(PPKT_REDIR_FILTER_ENTRY pPktRedirFilterList, 
 							ULONG nPktRedirFilterListEntryCount ) const{
-	if(InBound==NULL)return 1;
-	return DrvCall::SetPktRedirFilter(InBound,pPktRedirFilterList,nPktRedirFilterListEntryCount);
+	if(m_hInBound==NULL)return 1;
+	return DrvCall::SetPktRedirFilter(m_hInBound,pPktRedirFilterList,nPktRedirFilterListEntryCount);
 }
 UINT BindAdapter::SetOutHook(PPKT_REDIR_FILTER_ENTRY pPktRedirFilterList, 
 							 ULONG nPktRedirFilterListEntryCount ) const{
 
-	if(OutBound==NULL)return 1;
-	return DrvCall::SetPktRedirFilter(OutBound,pPktRedirFilterList,nPktRedirFilterListEntryCount);
+	if(m_hOutBound==NULL)return 1;
+	return DrvCall::SetPktRedirFilter(m_hOutBound,pPktRedirFilterList,nPktRedirFilterListEntryCount);
 }

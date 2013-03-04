@@ -7,8 +7,8 @@ PCASIM_SetPktRedirFilter DrvCall::pPCASIM_SetPktRedirFilter=0;
 PCASIM_ResetPktRedirFilter DrvCall::pPCASIM_ResetPktRedirFilter=0;
 PCASIM_OpenLowerAdapter DrvCall::pPCASIM_OpenLowerAdapter=0;
 PCASIM_OpenVirtualAdapter DrvCall::pPCASIM_OpenVirtualAdapter=0;
-HANDLE DrvCall::mainIo=NULL;
-HINSTANCE  DrvCall::lib=NULL;
+HANDLE DrvCall::s_mainIo=NULL;
+HINSTANCE  DrvCall::s_lib=NULL;
 DWORD DrvCall::SetPktRedirFilter(HANDLE hAdapter, 
 						   PPKT_REDIR_FILTER_ENTRY pPktRedirFilterList, 
 						   ULONG nPktRedirFilterListEntryCount )
@@ -52,8 +52,8 @@ DWORD DrvCall::EnumerateBindings(
 	PUINT pBufferSize // On entry this must point to size of buffer. 
 	)
 {
-	if(pPCASIM_EnumerateBindings&&mainIo)
-	return pPCASIM_EnumerateBindings(mainIo,pNdisStatus,pBuffer,pBufferSize);
+	if(pPCASIM_EnumerateBindings&&s_mainIo)
+	return pPCASIM_EnumerateBindings(s_mainIo,pNdisStatus,pBuffer,pBufferSize);
 	return 1;
 }
 
@@ -83,40 +83,40 @@ DWORD DrvCall::GetAdapterVendorDescription(
 }
 UINT DrvCall::OpenIo()
 {
-	if(mainIo!=NULL)return 0;
-	mainIo=CreateFile(IOName,0xC0000000,0,0,2,0x80,0);
-	if(mainIo==(HANDLE)INVALID_HANDLE_VALUE)
+	if(s_mainIo!=NULL)return 0;
+	s_mainIo=CreateFile(IOName,0xC0000000,0,0,2,0x80,0);
+	if(s_mainIo==(HANDLE)INVALID_HANDLE_VALUE)
 	{
-		mainIo=0;
+		s_mainIo=0;
 		//err 3 无法读入驱动
 		return 3;
 	}
 	return 0;
 }
 UINT DrvCall::OpenLib(){
-	if(lib==NULL)
-		lib=LoadLibrary("PcaFilterApi.dll");
-	if(lib==NULL)
+	if(s_lib==NULL)
+		s_lib=LoadLibrary("PcaFilterApi.dll");
+	if(s_lib==NULL)
 	{
 		//err 1 库不存在
 		return 1;
 	}
 	if(!pPCASIM_ResetPktRedirFilter)
-		pPCASIM_ResetPktRedirFilter=(PCASIM_ResetPktRedirFilter)GetProcAddress(lib,"PCASIM_ResetPktRedirFilter");
+		pPCASIM_ResetPktRedirFilter=(PCASIM_ResetPktRedirFilter)GetProcAddress(s_lib,"PCASIM_ResetPktRedirFilter");
 	if(!pPCASIM_SetPktRedirFilter)
-		pPCASIM_SetPktRedirFilter=(PCASIM_SetPktRedirFilter)GetProcAddress(lib,"PCASIM_SetPktRedirFilter");
+		pPCASIM_SetPktRedirFilter=(PCASIM_SetPktRedirFilter)GetProcAddress(s_lib,"PCASIM_SetPktRedirFilter");
 	if(!pPCASIM_GetAdapterCurrentAddress)
-		pPCASIM_GetAdapterCurrentAddress=(PCASIM_GetAdapterCurrentAddress)GetProcAddress(lib,"PCASIM_GetAdapterCurrentAddress");
+		pPCASIM_GetAdapterCurrentAddress=(PCASIM_GetAdapterCurrentAddress)GetProcAddress(s_lib,"PCASIM_GetAdapterCurrentAddress");
 	if(!pPCASIM_OpenVirtualAdapter)
-		pPCASIM_OpenVirtualAdapter=(PCASIM_OpenVirtualAdapter)GetProcAddress(lib,"PCASIM_OpenVirtualAdapterA");
+		pPCASIM_OpenVirtualAdapter=(PCASIM_OpenVirtualAdapter)GetProcAddress(s_lib,"PCASIM_OpenVirtualAdapterA");
 	if(!pPCASIM_EnumerateBindings)
-		pPCASIM_EnumerateBindings=(PCASIM_EnumerateBindings)GetProcAddress(lib,"PCASIM_EnumerateBindings");
+		pPCASIM_EnumerateBindings=(PCASIM_EnumerateBindings)GetProcAddress(s_lib,"PCASIM_EnumerateBindings");
 	if(!pPCASIM_OpenLowerAdapter)
-		pPCASIM_OpenLowerAdapter=(PCASIM_OpenLowerAdapter)GetProcAddress(lib,"PCASIM_OpenLowerAdapterA");
+		pPCASIM_OpenLowerAdapter=(PCASIM_OpenLowerAdapter)GetProcAddress(s_lib,"PCASIM_OpenLowerAdapterA");
 	if(!pPCASIM_GetAdapterVendorDescription)
-		pPCASIM_GetAdapterVendorDescription=(PCASIM_GetAdapterVendorDescription)GetProcAddress(lib,"PCASIM_GetAdapterVendorDescriptionA");
+		pPCASIM_GetAdapterVendorDescription=(PCASIM_GetAdapterVendorDescription)GetProcAddress(s_lib,"PCASIM_GetAdapterVendorDescriptionA");
 	if(!pPCASIM_GetDriverCapability)
-		pPCASIM_GetDriverCapability=(PCASIM_GetDriverCapability)GetProcAddress(lib,"PCASIM_GetDriverCapability");
+		pPCASIM_GetDriverCapability=(PCASIM_GetDriverCapability)GetProcAddress(s_lib,"PCASIM_GetDriverCapability");
 	if((!pPCASIM_ResetPktRedirFilter)||
 		(!pPCASIM_SetPktRedirFilter)||
 		(!pPCASIM_GetAdapterCurrentAddress)||
@@ -139,12 +139,12 @@ UINT DrvCall::Init(){
 }
 UINT DrvCall::Free()
 {
-	if(mainIo!=NULL)
-		CloseHandle(mainIo);
-	if(lib!=NULL)
+	if(s_mainIo!=NULL)
+		CloseHandle(s_mainIo);
+	if(s_lib!=NULL)
 	{
-		FreeLibrary(lib);
-		lib=0;
+		FreeLibrary(s_lib);
+		s_lib=NULL;
 	}
 	return 0;
 }

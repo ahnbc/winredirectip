@@ -18,8 +18,8 @@ class BindList
 	const vector<BindAdapter> *getLists() const;
 	private:
 	
-	static BindList _self;
-	static uint err;
-	vector <BindAdapter> Adapters;
+	static BindList s_self;
+	static uint s_err;
+	vector <BindAdapter> m_Adapters;
 };
 #endif

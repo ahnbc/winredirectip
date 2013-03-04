@@ -27,20 +27,18 @@ LPOVERLAPPED lpOverlapped
 ); 
 */
 
-const BindAdapter *adp=NULL;
-static HANDLE InThread=NULL;
-static HANDLE OutThread=NULL;
-static HANDLE MainThread=NULL;
-unsigned  InID,OutID,MainID;
+const BindAdapter *g_cpAdp=NULL;
+static HANDLE g_hInThread=NULL;
+static HANDLE g_hOutThread=NULL;
+static HANDLE g_hMainThread=NULL;
+//unsigned  InID,OutID,MainID;
 //static byte Inbuff[0x1000];
 //static byte Outbuff[0x1000];
-static  uint orgIP=0;//={221,231,130,70};
-static USHORT port=0;
-static UCHAR protocol=0;
+static  uint g_dworgIP=0;//={221,231,130,70};
+static USHORT g_port=0;
+static UCHAR g_protocol=0;
 //static const BYTE sdip[4]={207,56,113,28};
-static const char *DevName=0;
-static const char *vDevName=0;
-static uint rediIP=0;
+static uint g_dwrediIP=0;
 
 static CRITICAL_SECTION cs;
 #define MAXFF 0xFFFFFFFF
@@ -62,8 +60,10 @@ static CRITICAL_SECTION cs;
                   LPOVERLAPPED lpOverlapped );
 
 
-static PKT_REDIR_FILTER_ENTRY outent={0,MAXFF,0,MAXFF,REDIRECT,0};
-static PKT_REDIR_FILTER_ENTRY inent={0,MAXFF,0,MAXFF,REDIRECT,0};
+static PKT_REDIR_FILTER_ENTRY g_Outent={0,MAXFF,0,MAXFF,REDIRECT,0};
+static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
+
+const byte IN_DIRECT=1,OUT_DIRECT=2;
 
 typedef struct
 {
@@ -149,59 +149,77 @@ void AtExit(void)
 	DWORD code,ret;
 	DeleteCriticalSection(&cs);
 	DrvCall::Init();
-	if(adp!=NULL){
-	adp->ResetHook();
-	adp->BeginRequest()->CloseHandles();
-	adp=NULL;
+	if(g_cpAdp!=NULL){
+	g_cpAdp->ResetHook();
+	g_cpAdp->BeginRequest()->CloseHandles();
+	g_cpAdp=NULL;
 	}
-	if(InThread!=NULL)
+	if(g_hInThread!=NULL)
 	{
 
 	
-	ret=GetExitCodeThread(InThread,&code);
+	ret=GetExitCodeThread(g_hInThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(InThread,1);
-		CloseHandle(InThread);
-		InThread=NULL;
+		TerminateThread(g_hInThread,1);
+		CloseHandle(g_hInThread);
+		g_hInThread=NULL;
 	}
 	}
-	if(OutThread!=NULL)
+	if(g_hOutThread!=NULL)
 	{
-	ret=GetExitCodeThread(OutThread,&code);
+	ret=GetExitCodeThread(g_hOutThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(OutThread,1);
-		CloseHandle(OutThread);
-		OutThread=NULL;
+		TerminateThread(g_hOutThread,1);
+		CloseHandle(g_hOutThread);
+		g_hOutThread=NULL;
 	}
 	}
-	if(MainThread!=NULL)
+	if(g_hMainThread!=NULL)
 	{
-	ret=GetExitCodeThread(MainThread,&code);
+	ret=GetExitCodeThread(g_hMainThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(MainThread,1);
-		CloseHandle(MainThread);
-		MainThread=NULL;
+		TerminateThread(g_hMainThread,1);
+		CloseHandle(g_hMainThread);
+		g_hMainThread=NULL;
 	}
 	}
 	DrvCall::Free();
 }
-VOID CALLBACK InIOWriteCompletionRoutine(   
+
+ 
+ void IOWriteCompletionRoutine( 
+	 byte byDirect,
+	 DWORD dwErrorCode,   
+	 DWORD dwNumberOfBytesTransfered,   
+	 LPOVERLAPPED lpOverlapped )
+ {
+	 byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
+	 UINT ret;
+	 if(dwErrorCode!=0)return;
+	 ret=(byDirect==IN_DIRECT? \
+		 g_cpAdp->ReadInEx(buff,0x1000,lpOverlapped,InIOReadCompletionRoutine): \
+		 g_cpAdp->ReadOutEx(buff,0x1000,lpOverlapped,OutIOReadCompletionRoutine)
+		 );
+	 if(ret==0)
+	 {
+		 EnterCriticalSection(&cs);
+		 printf("%sIOWriteCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?"In":"Out",GetLastError());
+		 LeaveCriticalSection(&cs);
+	 }
+	 //IO Finish
+ }
+ VOID CALLBACK InIOWriteCompletionRoutine(   
                   DWORD dwErrorCode,   
                   DWORD dwNumberOfBytesTransfered,   
                   LPOVERLAPPED lpOverlapped )
  {
-	byte *Inbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
-	 if(dwErrorCode!=0)return;
-	 if(adp->ReadInEx(Inbuff,0x1000,lpOverlapped,InIOReadCompletionRoutine)==0)
-	 {
-		 EnterCriticalSection(&cs);
-		 printf("InIOWriteCompletionRoutine Last Error:%d\n",GetLastError());
-		 LeaveCriticalSection(&cs);
-	 }
-	 //IO Finish
+	
+	 IOWriteCompletionRoutine( IN_DIRECT,dwErrorCode,   
+		 dwNumberOfBytesTransfered,   
+		 lpOverlapped );
 	 
  }
 VOID CALLBACK OutIOWriteCompletionRoutine(   
@@ -210,15 +228,9 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
                   LPOVERLAPPED lpOverlapped )
  {
 
-	byte *Outbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
-	 if(dwErrorCode!=0)return;
-	 if(0==adp->ReadOutEx(Outbuff,0x1000,lpOverlapped,OutIOReadCompletionRoutine))
-	 {
-		 EnterCriticalSection(&cs);
-		 printf("OutIOWriteCompletionRoutine Last Error:%d\n",GetLastError());
-		 LeaveCriticalSection(&cs);
-	 }
-	 //IO Finish
+	 IOWriteCompletionRoutine(OUT_DIRECT,dwErrorCode,   
+		 dwNumberOfBytesTransfered,   
+		 lpOverlapped );
 	 
  }
 const static USHORT IP_PRO=0x0008,
@@ -227,82 +239,103 @@ const static USHORT IP_PRO=0x0008,
 const static UCHAR TCP_PRO=6,UDP_PRO=17;
 
 
+
+void  IOReadCompletionRoutine(   
+	byte byDirect,
+	DWORD dwErrorCode,   
+	DWORD dwNumberOfBytesTransfered,   
+	LPOVERLAPPED lpOverlapped )
+{
+	ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
+		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
+	byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
+	UCHAR ip_len;
+	UINT ret;
+	if(dwErrorCode!=0)return;
+	if(dwNumberOfBytesTransfered>=(14+20))
+	{
+
+		proto_3=*(USHORT * )(buff+12);
+		if(proto_3==IP_PRO)
+			ip_offset=LEN_ENT;
+		else if(proto_3==PPPOE_PRO)
+		{
+			ppp_next_pro=*(USHORT *)(buff+LEN_ENT+6);
+			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
+			else goto __write;
+		}
+		else 	goto __write;
+		proto_4=*(buff+ip_offset+9);
+		ip_len=((*(buff+ip_offset))&0x0f)<<2;
+		tcp_offset=ip_offset+ip_len;
+		//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
+		//
+		if(proto_4==TCP_PRO&&g_protocol==2)
+		{
+			goto __write;
+		}
+		if(proto_4==UDP_PRO&&g_protocol==1)
+		{
+			goto __write;
+		}
+		if(g_port!=0&&*(USHORT *)(buff+tcp_offset)!=ntohs(g_port))
+		{
+			goto __write;
+		}
+
+
+		*(ushort *)(buff+ip_offset+10)=0;
+		if(byDirect==IN_DIRECT)
+		*((uint *)(buff+ip_offset+12))=g_dworgIP;
+		else
+		*((uint *)(buff+ip_offset+16))=g_dwrediIP;
+
+		sum=ip_checksum((ushort *)(buff+ip_offset),ip_len);
+		*(ushort *)(buff+ip_offset+10)=sum;
+
+		if(proto_4==TCP_PRO)
+		{
+
+			ip_all_len=htons(*((ushort *)(buff+ip_offset+2)));
+			tcp_all_len=ip_all_len-ip_len;
+			//
+
+
+			*(ushort *)(buff+tcp_offset+16)=0;
+			//cal len ip header all length - ip header length
+
+			sum=tcp_sum_calc(tcp_all_len,(USHORT *)(buff+ip_offset+12),
+				(USHORT *)(buff+ip_offset+16),(USHORT *)(buff+tcp_offset));
+
+			*(ushort *)(buff+tcp_offset+16)=sum;
+		}
+
+	}
+
+__write:
+	ret=(byDirect==IN_DIRECT? \
+		g_cpAdp->WriteOutEx(buff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine): \
+		g_cpAdp->WriteInEx(buff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine)
+		);
+	if(0==ret)
+	{
+		EnterCriticalSection(&cs);
+		printf("%sIOReadCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?"In":"Out",GetLastError());
+		LeaveCriticalSection(&cs);
+	}
+}
+
+
  VOID CALLBACK InIOReadCompletionRoutine(   
                   DWORD dwErrorCode,   
                   DWORD dwNumberOfBytesTransfered,   
                   LPOVERLAPPED lpOverlapped )
  {
-	 ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
-		 ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
-	 byte *Inbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
-	// printf("InIO\n");
-	 
-	UCHAR ip_len;
-	if(dwErrorCode!=0)return;
-	  if(dwNumberOfBytesTransfered>=(14+20))
-	 {
-		
-		proto_3=*(USHORT * )(Inbuff+12);
-		if(proto_3==IP_PRO)
-			ip_offset=LEN_ENT;
-		else if(proto_3==PPPOE_PRO)
-		{
-			ppp_next_pro=*(USHORT *)(Inbuff+LEN_ENT+6);
-			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
-			else goto __in_write;
-		}
-		else 	goto __in_write;
-		proto_4=*(Inbuff+ip_offset+9);
-		ip_len=((*(Inbuff+ip_offset))&0x0f)<<2;
-		tcp_offset=ip_offset+ip_len;
-	//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
-//
-		if(proto_4==TCP_PRO&&protocol==2)
-		{
-			goto __in_write;
-		}
-		if(proto_4==UDP_PRO&&protocol==1)
-		{
-			goto __in_write;
-		}
-		if(port!=0&&*(USHORT *)(Inbuff+tcp_offset)!=ntohs(port))
-		{
-				goto __in_write;
-		}
-
-		
-		*(ushort *)(Inbuff+ip_offset+10)=0;
-		*((uint *)(Inbuff+ip_offset+12))=orgIP;
-		sum=ip_checksum((ushort *)(Inbuff+ip_offset),ip_len);
-		*(ushort *)(Inbuff+ip_offset+10)=sum;
-
-if(proto_4==TCP_PRO)
-{
-		
-		ip_all_len=htons(*((uint *)(Inbuff+ip_offset+2)));
-		tcp_all_len=ip_all_len-ip_len;
-	 //
-
-	
-	 *(ushort *)(Inbuff+tcp_offset+16)=0;
-		//cal len ip header all length - ip header length
-
-		sum=tcp_sum_calc(tcp_all_len,(USHORT *)(Inbuff+ip_offset+12),
-			(USHORT *)(Inbuff+ip_offset+16),(USHORT *)(Inbuff+tcp_offset));
-
-		*(ushort *)(Inbuff+tcp_offset+16)=sum;
-}
-
-	 }
-	 
-	  __in_write:
-
-	 if(0==adp->WriteOutEx(Inbuff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine))
-		 {
-		  EnterCriticalSection(&cs);
-		  printf("InIOReadCompletionRoutine Last Error:%d\n",GetLastError());
-		  LeaveCriticalSection(&cs);
-	 }
+	 IOReadCompletionRoutine( 
+		IN_DIRECT,
+		dwErrorCode,   
+		dwNumberOfBytesTransfered,   
+		 lpOverlapped );
  }
  VOID CALLBACK OutIOReadCompletionRoutine(   
                   DWORD dwErrorCode,   
@@ -310,198 +343,113 @@ if(proto_4==TCP_PRO)
                   LPOVERLAPPED lpOverlapped )
  {
 	 
-	 ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
-		 ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
-	 byte *Outbuff=(byte *)lpOverlapped+sizeof(OVERLAPPED),*tcpbuff=NULL;
-	 UCHAR ip_len;
-	 if(dwErrorCode!=0)return;
-	//printf("OutIO\n");
-	 if(dwNumberOfBytesTransfered>=(14+20))
-	 {
-		
-		proto_3=*(USHORT * )(Outbuff+12);
-		if(proto_3==IP_PRO)
-			ip_offset=LEN_ENT;
-		else if(proto_3==PPPOE_PRO)
-		{
-			ppp_next_pro=*(USHORT *)(Outbuff+LEN_ENT+6);
-			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
-			else goto __out_write;
-		}
-		else 	 goto __out_write;
-		proto_4=*(Outbuff+ip_offset+9);
-		ip_len=((*(Outbuff+ip_offset))&0x0f)<<2;
-		tcp_offset=ip_offset+ip_len;
-	//	if(proto_4!=TCP_PRO)return;
-//
-
-
-		if(proto_4==TCP_PRO&&protocol==2)
-		{
-			goto __out_write;
-		}
-		if(proto_4==UDP_PRO&&protocol==1)
-		{
-			goto __out_write;
-		}
-		if(port!=0&&*(USHORT *)(Outbuff+tcp_offset+2)!=ntohs(port))
-		{
-			goto __out_write;
-		}
-
-		
-		*(ushort *)(Outbuff+ip_offset+10)=0;
-		*((uint *)(Outbuff+ip_offset+16))=rediIP;
-		sum=ip_checksum((ushort *)(Outbuff+ip_offset),ip_len);
-		*(ushort *)(Outbuff+ip_offset+10)=sum;
-
-if(proto_4==TCP_PRO)
-{
-		
-		ip_all_len=htons(*((uint *)(Outbuff+ip_offset+2)));
-		tcp_all_len=ip_all_len-ip_len;
-	 //
-
-	
-	 *(ushort *)(Outbuff+tcp_offset+16)=0;
-		//cal len ip header all length - ip header length
-
-		sum=tcp_sum_calc(tcp_all_len,(USHORT *)(Outbuff+ip_offset+12),
-			(USHORT *)(Outbuff+ip_offset+16),(USHORT *)(Outbuff+tcp_offset));
-
-		*(ushort *)(Outbuff+tcp_offset+16)=sum;
-}
-	 }
-
-	 __out_write:
-	 if(0==adp->WriteInEx(Outbuff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine))
-		 {
-		EnterCriticalSection(&cs);
-		printf("OutIOReadCompletionRoutine Last Error:%d\n",GetLastError()) ;
-		LeaveCriticalSection(&cs);
-		}
+	 IOReadCompletionRoutine( 
+		 OUT_DIRECT,
+		 dwErrorCode,   
+		 dwNumberOfBytesTransfered,   
+		 lpOverlapped );
  }
+
+ 
+ unsigned WorkFunc(byte byDirect)
+ {
+	 uint ret,i;
+	 PKT_REDIR_FILTER_ENTRY *ent;
+	 byte *(buff[0x40]),*Dbuff;
+	 ent=(byDirect==IN_DIRECT?
+		 &g_Inent:&g_Outent
+		 );
+	 ret=g_cpAdp->SetInHook(ent,1);
+	 if(ret!=0)
+		 return 0xFF;
+	 EnterCriticalSection(&cs);
+	 printf("start %swork\n",byDirect==IN_DIRECT?"in":"out");
+	 LeaveCriticalSection(&cs);
+	 for(i=0;i<0x40;i++)
+	 {
+		 if(!g_cpAdp->isInHandleOpen())break;
+		 buff[i]=(byte *)malloc(0x1000+sizeof(OVERLAPPED));
+		 Dbuff=buff[i]+sizeof(OVERLAPPED);
+		 memset(buff[i],0,sizeof(OVERLAPPED));
+		 ret=(byDirect==IN_DIRECT?
+			 g_cpAdp->ReadInEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine):
+			 ret=g_cpAdp->ReadOutEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine)
+			 );
+		 if(ret==0)
+		 {
+			 EnterCriticalSection(&cs);
+			 printf("%swork  stop:%d\n",byDirect==IN_DIRECT?"in":"out",GetLastError());
+			 LeaveCriticalSection(&cs);
+			 break;
+		 }
+	 }
+	 while(1)
+	 {
+		 SleepEx(0x1f4,1);
+		 ret=(byDirect==IN_DIRECT?
+			 g_cpAdp->isInHandleOpen():
+			 g_cpAdp->isOutHandleOpen());
+		 if(!ret)break;
+	 }
+	 for(i=0;i<0x40;i++)
+	 {
+		 free(buff[i]);
+	 }
+	 return 0;
+ }
+
 static unsigned __stdcall InWork(void * pList)
 {
-	uint ret,i;
-	byte *(buff[0x40]),*Inbuff;
-	ret=adp->SetInHook(&inent,1);
-	if(ret!=0)
-		return 0xFF;
-	EnterCriticalSection(&cs);
-	printf("start inwork\n");
-	LeaveCriticalSection(&cs);
-	for(i=0;i<0x40;i++)
-	{
-		if(!adp->isInHandleOpen())break;
-		buff[i]=(byte *)malloc(0x1000+sizeof(OVERLAPPED));//让系统自动回收
-		Inbuff=buff[i]+sizeof(OVERLAPPED);
-		memset(buff[i],0,sizeof(OVERLAPPED));
-		ret=adp->ReadInEx(Inbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine);
-		//printf("inwork:%d\n",ret);
-		if(ret==0)
-		{
-			EnterCriticalSection(&cs);
-			printf("inwork  stop:%d\n",GetLastError());
-			LeaveCriticalSection(&cs);
-			break;
-		}
-	}
-	while(1)
-	{
-		SleepEx(0x1f4,1);
-		if(!adp->isInHandleOpen())break;
-	}
-		for(i=0;i<0x40;i++)
-	{
-			free(buff[i]);
-		}
-	//_endthread();
-	return 0;
+	return WorkFunc(IN_DIRECT);
 }
 static unsigned __stdcall OutWork(void * pList)
 {
-	uint ret,i;
-	byte *(buff[0x40]),*Outbuff;
-	ret=adp->SetOutHook(&outent,1);
-	if(ret!=0)
-	{
-		return 0xFF;
-	}	
-	EnterCriticalSection(&cs);
-	printf("start outwork\n");
-	LeaveCriticalSection(&cs);
-	for(i=0;i<0x40;i++)
-	{
-		if(!adp->isOutHandleOpen())break;
-		buff[i]=(byte *) malloc(0x1000+sizeof(OVERLAPPED));
-		Outbuff=buff[i]+sizeof(OVERLAPPED);
-		memset(buff[i],0,sizeof(OVERLAPPED));
-		ret=adp->ReadOutEx(Outbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine);
-		//printf("outwork:%d\n",ret);
-		if(ret==0)
-		{
-			EnterCriticalSection(&cs);
-			printf("outwork  stop:%d\n",GetLastError());
-			LeaveCriticalSection(&cs);
-			break;
-		}
-	}
-		while(1)
-	{
-		SleepEx(0x1f4,1);
-		if(!adp->isOutHandleOpen())break;
-	}
-		for(i=0;i<0x40;i++)
-	{
-			free(buff[i]);
-		}
-	//_endthread();
-	return 0;
+	return WorkFunc(OUT_DIRECT);
 }
+
 static unsigned __stdcall MainWork(void * pList)
 {
 	HANDLE hlist[2];
 	DWORD ret;
-	if(!InThread)
-	InThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
-	if(!OutThread)
-	OutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
-	if(!InThread)
+	unsigned  InID,OutID;
+	if(!g_hInThread)
+	g_hInThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
+	if(!g_hOutThread)
+	g_hOutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
+	if(!g_hInThread)
 	{
-		if(OutThread)
+		if(g_hOutThread)
 		{
-			TerminateThread(OutThread,1);
-			WaitForSingleObject(OutThread,INFINITE);
-			OutThread=0;
+			TerminateThread(g_hOutThread,1);
+			WaitForSingleObject(g_hOutThread,INFINITE);
+			g_hOutThread=0;
 		}
 		return 0;
 	}
-	if(!OutThread)
+	if(!g_hOutThread)
 	{
-		TerminateThread(InThread,1);
-		WaitForSingleObject(InThread,INFINITE);
-		InThread=0;
+		TerminateThread(g_hInThread,1);
+		WaitForSingleObject(g_hInThread,INFINITE);
+		g_hInThread=0;
 		return 0;
 	}
-	hlist[0]=InThread;
-	hlist[1]=OutThread;
+	hlist[0]=g_hInThread;
+	hlist[1]=g_hOutThread;
 	do{
 	ret=WaitForMultipleObjectsEx(2,hlist,0,0x3e8,1);
 	}while(ret==0x102);
-//	_endthread();
 	return 0;
 }
 
-UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[],UCHAR proto,USHORT fport)
+UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreIP[],UCHAR proto,USHORT wport)
 {
 	
 	int i=0,size=0,j=0,ret=0;
 	BindList *list;
-	
+	unsigned  MainID;
 	InitializeCriticalSection(&cs);
-	protocol=proto;
-	port=fport;
+	g_protocol=proto;
+	g_port=wport;
 	ret=DrvCall::Init();
 	if(ret)return ret;
 	list=BindList::getAllBindList();
@@ -509,25 +457,25 @@ UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[],UCHAR pr
 	{
 		return BindList::GetError();
 	}
-	if(strstr(S,"\\DEVICE\\")==S)
-		adp=list->getByName(string(S));
-	else if (strstr(S,".")!=NULL)
+	if(strstr(szDevName,"\\DEVICE\\")==szDevName)
+		g_cpAdp=list->getByName(string(szDevName));
+	else if (strstr(szDevName,".")!=NULL)
 	{
-		adp=list->getByIP(string(S));
+		g_cpAdp=list->getByIP(string(szDevName));
 	}
 	else
 	{
-		adp=list->getByMac(string(S));
+		g_cpAdp=list->getByMac(string(szDevName));
 		
 	}
-	if(adp==NULL)
+	if(g_cpAdp==NULL)
 	{
 		//if err20??
 		return 20;
 	}
-	ret=adp->BeginRequest()->OpenHandles();
-	//DevName=adp->getName()->c_str();
-	//vDevName=adp->getvName()->c_str();
+	ret=g_cpAdp->BeginRequest()->OpenHandles();
+	//DevName=g_cpAdp->getName()->c_str();
+	//vDevName=g_cpAdp->getvName()->c_str();
 	//InHandle=DrvCall::OpenLowerAdapter(DevName);
 //	pPCASIM_OpenVirtualAdapter(DevName);
 //	OutHandle=pPCASIM_OpenLowerAdapter(DevName);
@@ -536,34 +484,34 @@ UINT  WINAPI redirIP(const char S[],const char orIP[],const char reIP[],UCHAR pr
 	if(ret)
 	{
 		//err 9 In句柄获取失败
-		adp->BeginRequest()->CloseHandles();
+		g_cpAdp->BeginRequest()->CloseHandles();
 		return 9;
 	}
 	
-	orgIP=inet_addr(orIP);
-	rediIP=inet_addr(reIP);
-	if(orgIP==MAXFF||rediIP==MAXFF)
+	g_dworgIP=inet_addr(cporIP);
+	g_dwrediIP=inet_addr(cpreIP);
+	if(g_dworgIP==MAXFF||g_dwrediIP==MAXFF)
 	{
 		//err 11 ip输入错误
 	//	printf("IP error.\n");
 		return 11;
 	}
-	inent.m_IPSrcAddressRangeEnd=ntohl(rediIP);
-	inent.m_IPSrcAddressRangeStart=ntohl(rediIP);
+	g_Inent.m_IPSrcAddressRangeEnd=ntohl(g_dwrediIP);
+	g_Inent.m_IPSrcAddressRangeStart=ntohl(g_dwrediIP);
 	
 	
-	outent.m_IPDstAddressRangeEnd=ntohl(orgIP);
-	outent.m_IPDstAddressRangeStart=ntohl(orgIP);
+	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
+	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
 
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
-   MainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
-   	if((!MainThread)||(MainThread==INVALID_HANDLE_VALUE))
+   g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
+   	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
 	{
 		//err 12 主线程启动失败
-		TerminateThread(MainThread,1);
-		WaitForSingleObject(MainThread,INFINITE);
-		MainThread=0;
+		TerminateThread(g_hMainThread,1);
+		WaitForSingleObject(g_hMainThread,INFINITE);
+		g_hMainThread=0;
 		return 12;
 	}
 	return 0;
@@ -579,7 +527,7 @@ int  main(int argc,char ** argv)
 	int ch,margc=0;
 	char * margv[10];
 	BindList *list;
-	USHORT mPort;
+	USHORT mg_port;
 	UCHAR mPro;
 	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
@@ -593,7 +541,7 @@ if(argc ==1){
 		system("pause");
 		return 0;
 	}
-	printf("Support Adapter List:\n");
+	printf("Supg_port Adapter List:\n");
 	for(it=list->getLists()->begin();it!=list->getLists()->end();it++)
 	{
 		if(!it->getDesc()->empty())
@@ -610,14 +558,14 @@ if(argc ==1){
 	return 0;
 }
 	margc=0;
-	mPort=0;
+	mg_port=0;
 	mPro=0;
 	while(ch=getopt_a(argc,argv,"p:o:")!=-1)
 	{
 		switch(ch)
 		{
 		case 'p':
-			mPort=(USHORT)atoi(optarg_a);
+			mg_port=(USHORT)atoi(optarg_a);
 			break;
 		case 'o':
 			mPro=(UCHAR)atoi(optarg_a);
@@ -633,7 +581,7 @@ if(argc ==1){
 	}
 	if(mPro>2)
 	{
-		printf("Protocol 1=TCP 2=UDP 0=BOTH .\n");
+		printf("g_protocol 1=TCP 2=UDP 0=BOTH .\n");
 		return 0;
 	}
 
@@ -644,15 +592,15 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
-	if(ret=redirIP(margv[0],margv[1],margv[2],mPro,mPort))
+	if(ret=redirIP(margv[0],margv[1],margv[2],mPro,mg_port))
 	{
 		printf("Error Back:%d\n",ret);
 	}
 	else
 	{
 		printf("Running \n");
-		if(MainThread){
-			WaitForSingleObject(MainThread,INFINITE);
+		if(g_hMainThread){
+			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
 	}
 	printf("End\n");
