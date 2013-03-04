@@ -28,8 +28,8 @@ LPOVERLAPPED lpOverlapped
 */
 
 const BindAdapter *adp=NULL;
-static HANDLE InThread;
-static HANDLE OutThread;
+static HANDLE InThread=NULL;
+static HANDLE OutThread=NULL;
 static HANDLE MainThread=NULL;
 unsigned  InID,OutID,MainID;
 //static byte Inbuff[0x1000];
@@ -149,28 +149,42 @@ void AtExit(void)
 	DWORD code,ret;
 	DeleteCriticalSection(&cs);
 	DrvCall::Init();
+	if(adp!=NULL){
 	adp->ResetHook();
 	adp->BeginRequest()->CloseHandles();
+	adp=NULL;
+	}
+	if(InThread!=NULL)
+	{
+
+	
 	ret=GetExitCodeThread(InThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
 		TerminateThread(InThread,1);
 		CloseHandle(InThread);
-		InThread=0;
+		InThread=NULL;
 	}
+	}
+	if(OutThread!=NULL)
+	{
 	ret=GetExitCodeThread(OutThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
 		TerminateThread(OutThread,1);
 		CloseHandle(OutThread);
-		OutThread=0;
+		OutThread=NULL;
 	}
+	}
+	if(MainThread!=NULL)
+	{
 	ret=GetExitCodeThread(MainThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
 		TerminateThread(MainThread,1);
 		CloseHandle(MainThread);
-		MainThread=0;
+		MainThread=NULL;
+	}
 	}
 	DrvCall::Free();
 }
@@ -630,7 +644,7 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
-	if(ret=redirIP(margv[0],margv[1],margv[2]))
+	if(ret=redirIP(margv[0],margv[1],margv[2],mPro,mPort))
 	{
 		printf("Error Back:%d\n",ret);
 	}
