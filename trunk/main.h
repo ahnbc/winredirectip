@@ -1,7 +1,7 @@
 #ifndef _H_MSXDEX
 #define _H_MSXDEX
 #define WINVER 0x0502
-#define _WIN32_WINNT 0x0502
+#define _WIN32_WINNT WINVER
 #include "windows.h"
 #ifndef __MINGW32__
 //#include "ntddndis.h"
