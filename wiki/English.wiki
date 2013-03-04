@@ -1,5 +1,4 @@
 
-
 = Requirement =
 
  * win xp or  above (x86 and x64)
@@ -8,10 +7,11 @@
 
 = Export Function =
  
- * redirIP : three input parameters , net adapter information string
-(MAC or IP or LowDeviceName) ,ip string you want to be redirected，ip string to redirect
+ * redirIP : five input parameters ,1. net adapter information string
+(MAC or IP or LowDeviceName) ,2.ip string you want to be redirected，3.ip string to redirect ,4.protocol 1=TCP 2=UDP 0=BOTH ,byte type, 5.Port unsigned short type
     return type is UINT 0=succeed，otherwise return error code
- * Free : free all resource and clear net filter hook
+ * Free : free all resource and clear net filter hook 
+    return type is UINT 0=succeed，otherwise return error code
 
 =  How to Use =
  
