@@ -23,3 +23,4 @@
 第二个参数 要重定向的源ip，第三个参数 目标ip
     如 xxx.exe  [-p 协议] [-o 端口] \DEVICE\xxxx ip ip
    默认 协议=0 tcp+udp 端口 0 所有端口
+   最新版本支持域名
