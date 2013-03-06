@@ -450,6 +450,9 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	int i=0,size=0,j=0,ret=0;
 	BindList *list;
 	unsigned  MainID;
+	hostent * he;
+	WORD wVersionRequested;
+	WSADATA wsaData;
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
 	g_port=wport;
@@ -490,9 +493,24 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		g_cpAdp->BeginRequest()->CloseHandles();
 		return 9;
 	}
-	
-	g_dworgIP=inet_addr(cporIP);
-	g_dwrediIP=inet_addr(cpreIP);
+	wVersionRequested =MAKEWORD( 2, 0 );
+	ret = WSAStartup( wVersionRequested, &wsaData );
+	if ( ret  ) return 33;
+	he=gethostbyname(cporIP);
+	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
+	{
+		printf("Get Ip Error:%d\n",WSAGetLastError());
+		return 30;
+	}
+	//inet_addr
+	g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
+	he=gethostbyname(cpreIP);
+	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
+	{
+		return 31;
+	}
+	g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
+	WSACleanup();
 	if(g_dworgIP==MAXFF||g_dwrediIP==MAXFF)
 	{
 		//err 11 ipÊäÈë´íÎó
