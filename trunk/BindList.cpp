@@ -3,6 +3,7 @@
 #include "string.h"
 BindList BindList::s_self=BindList();
 uint BindList::s_err=0;
+BOOL BindList::initFlag=0;
  BindList * BindList::getAllBindList()
 {
 	uint ret,i,j;
@@ -16,6 +17,12 @@ uint BindList::s_err=0;
 	DWORD dwRetVal = 0;
 	ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
 	USHORT mac[3];
+	if(initFlag==0)
+	{
+		s_self=BindList();
+		s_err=0;
+		initFlag=1;
+	}
 	vector<BindAdapter>::iterator it;
 
 	//--------------------------------------------

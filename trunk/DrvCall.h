@@ -71,6 +71,7 @@ class DrvCall
 		static HANDLE s_mainIo;
 		static HINSTANCE  s_lib;
 	public:
+		static BOOL initFlag;
 		static DWORD SetPktRedirFilter(HANDLE hAdapter, 
 			PPKT_REDIR_FILTER_ENTRY pPktRedirFilterList, 
 			ULONG nPktRedirFilterListEntryCount );
