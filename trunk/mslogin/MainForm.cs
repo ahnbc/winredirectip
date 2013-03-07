@@ -47,9 +47,9 @@ namespace mslogin
     //    EndCall pEndCall;
     //    
 
-        Thread mainthread;
-        static  UInt32 mainworkret;
-		static LangString ls;
+      //  Thread mainthread;
+       // static  UInt32 mainworkret;
+		LangString ls;
         Boolean Opened = false;
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
@@ -149,20 +149,10 @@ namespace mslogin
 		{
 
 		}
-       static  void MainWork(Object paras)
-        {
-            object[] data = (object[])paras;
-            mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
-           if(mainworkret!=0)
-               {
-                   MessageBox.Show(mainworkret.ToString() + ":" + ls.get("msg/m" + mainworkret));
-                   return;
-               }
-        }
-
 
 		void CommitClick(object sender, EventArgs e)
 		{
+            UInt32 ret = 0;
 			if(ipBox.Text=="")
 			{
 				MessageBox.Show(ls.get("imsg/m1"));
@@ -173,9 +163,13 @@ namespace mslogin
 				MessageBox.Show(ls.get("imsg/m2"));
 				return;
 			}
-            mainthread = new Thread(MainWork);
-          //  ret = redirIp(AdaptorcomboBox.Text, locamap[LocationBox.Text], ipBox.Text, (byte)1, (UInt16)0);
-            mainthread.Start(new object[] { AdaptorcomboBox.Text.Clone(), locamap[LocationBox.Text].Clone(), ipBox.Text.Clone() });
+             ret = redirIp(AdaptorcomboBox.Text, locamap[LocationBox.Text], ipBox.Text, (byte)1, (UInt16)0);
+           // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
+            if (ret != 0)
+            {
+                MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                return;
+            }
 
 		/*	*/
 		}

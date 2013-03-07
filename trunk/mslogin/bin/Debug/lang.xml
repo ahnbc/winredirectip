@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LangString>
+<title zh="冒险岛登录器" en="mxdLogin" />
+<UI1 zh="网卡接口: " en="NetWork Interface:" />
+<UI2 zh="冒险岛版本类型： " en="MS Location:" />
+<UI3 zh="私服地址或域名： " en="Private Server:(IP or domain)" />
+<StatusLabel_1 zh="准备就绪 " en="Ready" />
+<Commit zh="开始重定向 " en="Commit" />
+<StatusLabel_2 zh="正在重定向 " en="Working" />
+<StatusLabel_3 zh="有错误发生 " en="Error occur" />
+<msg>
+<m1 zh="库文件不存在" en="Library File not exist" />
+</msg>
+<imsg>
+<m1 zh="ip 为空" en="ip empty" />
+<m2 zh="区域不支持" en="Location unsupport" />
+<m3 zh="Api 链接库不存在" en="Api Dll not exist" />
+</imsg>
+</LangString>
