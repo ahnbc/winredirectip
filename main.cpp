@@ -73,6 +73,8 @@ typedef struct
 	uchar protocal;             //8位协议号       
 	unsigned short tcpl;    // TCP包长度      
 }psdheader_t;
+
+
 USHORT ip_checksum(USHORT* buffer, int size) 
 {
 DWORD cksum = 0;
@@ -140,15 +142,39 @@ if (i) {
 	// Take the one's complement of sum
 return (USHORT)(~sum);
 }
+
+BOOL IsWow64Current()  
+{  
+	FARPROC fnIsWow64Process;  
+	BOOL bIsWow64;  
+
+
+	bIsWow64 = FALSE;  
+	fnIsWow64Process = GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsWow64Process");  
+
+
+	if(fnIsWow64Process)  
+		if(((BOOL (WINAPI *)(HANDLE, PBOOL))fnIsWow64Process)(GetCurrentProcess(), &bIsWow64))  
+			return bIsWow64;  
+	return FALSE;  
+}
+
+
 void AtExit(void)
 {
-	Free();
+	Free(1);
 }
- void  WINAPI Free()
+ UINT  WINAPI Free(const byte freelib)
 {
 	DWORD code,ret;
+	FILE *f;
+	fopen_s(&f,"err.log","a");
+	fputs("22",f);
 	DeleteCriticalSection(&cs);
-	DrvCall::Init();
+	fputs("23",f);
+	ret=DrvCall::Init();
+	if(ret)
+		return ret;
 	if(g_cpAdp!=NULL){
 	g_cpAdp->ResetHook();
 	g_cpAdp->BeginRequest()->CloseHandles();
@@ -156,12 +182,11 @@ void AtExit(void)
 	}
 	if(g_hInThread!=NULL)
 	{
-
-	
 	ret=GetExitCodeThread(g_hInThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(g_hInThread,1);
+		WaitForSingleObject(g_hInThread,INFINITE);
+		//TerminateThread(g_hInThread,1);
 		CloseHandle(g_hInThread);
 		g_hInThread=NULL;
 	}
@@ -171,7 +196,8 @@ void AtExit(void)
 	ret=GetExitCodeThread(g_hOutThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(g_hOutThread,1);
+		//TerminateThread(g_hOutThread,1);
+		WaitForSingleObject(g_hOutThread,INFINITE);
 		CloseHandle(g_hOutThread);
 		g_hOutThread=NULL;
 	}
@@ -181,12 +207,17 @@ void AtExit(void)
 	ret=GetExitCodeThread(g_hMainThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		TerminateThread(g_hMainThread,1);
+		WaitForSingleObject(g_hMainThread,INFINITE);
+		//TerminateThread(g_hMainThread,1);
 		CloseHandle(g_hMainThread);
 		g_hMainThread=NULL;
 	}
 	}
-	DrvCall::Free();
+	fputs("23",f);
+	if(freelib)
+	DrvCall::Free();//may be not needed
+	fclose(f);
+	return 0;
 }
 
  
@@ -423,16 +454,18 @@ static unsigned __stdcall MainWork(void * pList)
 	{
 		if(g_hOutThread)
 		{
-			TerminateThread(g_hOutThread,1);
+			//TerminateThread(g_hOutThread,1);
 			WaitForSingleObject(g_hOutThread,INFINITE);
+			CloseHandle(g_hOutThread);
 			g_hOutThread=0;
 		}
 		return 0;
 	}
 	if(!g_hOutThread)
 	{
-		TerminateThread(g_hInThread,1);
+		//TerminateThread(g_hInThread,1);
 		WaitForSingleObject(g_hInThread,INFINITE);
+		CloseHandle(g_hInThread);
 		g_hInThread=0;
 		return 0;
 	}
@@ -444,7 +477,7 @@ static unsigned __stdcall MainWork(void * pList)
 	return 0;
 }
 
-UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreIP[],UCHAR proto,USHORT wport)
+UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreIP[],const UCHAR proto,const USHORT wport)
 {
 	
 	int i=0,size=0,j=0,ret=0;
@@ -453,11 +486,17 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	hostent * he;
 	WORD wVersionRequested;
 	WSADATA wsaData;
+	FILE *f;
+	fopen_s(&f,"err.log","a");
+	fputs("1",f);
+	if(IsWow64Current())return 40;
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
 	g_port=wport;
+	fputs("2",f);
 	ret=DrvCall::Init();
 	if(ret)return ret;
+	fputs("3",f);
 	list=BindList::getAllBindList();
 	if(list==NULL)
 	{
@@ -479,6 +518,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		//if err20??
 		return 20;
 	}
+	fputs("4",f);
 	ret=g_cpAdp->BeginRequest()->OpenHandles();
 	//DevName=g_cpAdp->getName()->c_str();
 	//vDevName=g_cpAdp->getvName()->c_str();
@@ -493,8 +533,10 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		g_cpAdp->BeginRequest()->CloseHandles();
 		return 9;
 	}
+	fputs("5",f);
 	wVersionRequested =MAKEWORD( 2, 0 );
 	ret = WSAStartup( wVersionRequested, &wsaData );
+	fputs("6",f);
 	if ( ret  ) return 33;
 	he=gethostbyname(cporIP);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
@@ -503,6 +545,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		return 30;
 	}
 	//inet_addr
+	fputs("7",f);
 	g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
 	he=gethostbyname(cpreIP);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
@@ -519,7 +562,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	}
 	g_Inent.m_IPSrcAddressRangeEnd=ntohl(g_dwrediIP);
 	g_Inent.m_IPSrcAddressRangeStart=ntohl(g_dwrediIP);
-	
+	fputs("8",f);
 	
 	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
 	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
@@ -532,10 +575,59 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		//err 12 主线程启动失败
 		TerminateThread(g_hMainThread,1);
 		WaitForSingleObject(g_hMainThread,INFINITE);
+		CloseHandle(g_hMainThread);
 		g_hMainThread=0;
 		return 12;
 	}
+	fputs("9",f);
+	fclose(f);
 	return 0;
+}
+void WINAPI DllInit()
+{
+	g_cpAdp=NULL;
+	g_hInThread=NULL;
+	g_hOutThread=NULL;
+	g_hMainThread=NULL;
+	g_dworgIP=0;
+	g_port=0;
+	g_protocol=0;
+	g_dwrediIP=0;
+
+	g_Outent.m_IPSrcAddressRangeStart=g_Outent.m_IPDstAddressRangeStart=
+		g_Inent.m_IPSrcAddressRangeStart=g_Inent.m_IPDstAddressRangeStart=
+		g_Inent.m_nReserved=g_Outent.m_nReserved=0;
+	g_Outent.m_IPSrcAddressRangeEnd=g_Outent.m_IPDstAddressRangeEnd=
+		g_Inent.m_IPSrcAddressRangeEnd=g_Inent.m_IPDstAddressRangeEnd=MAXFF;
+		g_Outent.m_nFilterAction=g_Inent.m_nFilterAction=REDIRECT;
+
+	DrvCall::initFlag=0;
+	BindList::initFlag=0;
+}
+
+
+
+BOOL WINAPI  
+	DllEntry(HANDLE	hinstDLL, 
+	DWORD dwReason, 
+	LPVOID /* lpvReserved */)
+{
+
+	/*global init*/
+	switch (dwReason)
+	{
+	case DLL_PROCESS_ATTACH:
+	case DLL_THREAD_ATTACH:
+		DllInit();
+		break;
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		Free(1);
+		break;
+	default:
+		break;
+	}
+	return TRUE;
 }
 
 
@@ -551,8 +643,10 @@ int  main(int argc,char ** argv)
 	UCHAR mPro;
 	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
-
-
+	if(IsWow64Current()){
+		printf("run in 64bit version..\n");
+		system("pause");
+		return 0;};
 if(argc ==1){
 	list=BindList::getAllBindList();
 	if(list==NULL)

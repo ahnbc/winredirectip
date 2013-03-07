@@ -8,7 +8,7 @@ using namespace std;
 class BindList
 {
 	public:
-	
+	static BOOL initFlag;
 	static  BindList *getAllBindList();
 	const BindAdapter * getByMac(string mac)const ;
 	const BindAdapter * getByIP(string ip) const;

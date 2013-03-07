@@ -42,9 +42,9 @@ typedef unsigned long u32;
 		#define  REDIRECT 3
 		const char IOName[]="\\\\.\\PcaIpRedir";
 		
- void  WINAPI Free();
- UINT WINAPI  redirIP(const char [],const char[],const char[],UCHAR ,USHORT );
- 
+ UINT  WINAPI Free(const byte);
+ UINT WINAPI  redirIP(const char [],const char[],const char[],const UCHAR ,const USHORT );
+ void WINAPI DllInit();
 #ifdef __cplusplus
 }
 #endif

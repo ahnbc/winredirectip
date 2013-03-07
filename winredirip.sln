@@ -7,6 +7,8 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		Dll|Win32 = Dll|Win32
+		Dll|x64 = Dll|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
@@ -16,16 +18,20 @@ Global
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Debug|Win32.Deploy.0 = Debug|Win32
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Debug|x64.ActiveCfg = Debug|x64
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Debug|x64.Build.0 = Debug|x64
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|Win32.ActiveCfg = Dll|Win32
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|Win32.Build.0 = Dll|Win32
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|Win32.Deploy.0 = Dll|Win32
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|x64.ActiveCfg = Dll|x64
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|x64.Build.0 = Dll|x64
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Dll|x64.Deploy.0 = Dll|x64
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|Win32.ActiveCfg = Release|Win32
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|Win32.Build.0 = Release|Win32
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|Win32.Deploy.0 = Release|Win32
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|x64.ActiveCfg = Release|x64
 		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|x64.Build.0 = Release|x64
+		{F7F7A0EB-21DE-496F-BF0C-4BF911F26B36}.Release|x64.Deploy.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
