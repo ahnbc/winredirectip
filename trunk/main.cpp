@@ -167,11 +167,7 @@ void AtExit(void)
  UINT  WINAPI Free(const byte freelib)
 {
 	DWORD code,ret;
-	FILE *f;
-	fopen_s(&f,"err.log","a");
-	fputs("22",f);
 	DeleteCriticalSection(&cs);
-	fputs("23",f);
 	ret=DrvCall::Init();
 	if(ret)
 		return ret;
@@ -213,10 +209,8 @@ void AtExit(void)
 		g_hMainThread=NULL;
 	}
 	}
-	fputs("23",f);
 	if(freelib)
 	DrvCall::Free();//may be not needed
-	fclose(f);
 	return 0;
 }
 
@@ -486,17 +480,12 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	hostent * he;
 	WORD wVersionRequested;
 	WSADATA wsaData;
-	FILE *f;
-	fopen_s(&f,"err.log","a");
-	fputs("1",f);
 	if(IsWow64Current())return 40;
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
 	g_port=wport;
-	fputs("2",f);
 	ret=DrvCall::Init();
 	if(ret)return ret;
-	fputs("3",f);
 	list=BindList::getAllBindList();
 	if(list==NULL)
 	{
@@ -518,7 +507,6 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		//if err20??
 		return 20;
 	}
-	fputs("4",f);
 	ret=g_cpAdp->BeginRequest()->OpenHandles();
 	//DevName=g_cpAdp->getName()->c_str();
 	//vDevName=g_cpAdp->getvName()->c_str();
@@ -533,10 +521,8 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		g_cpAdp->BeginRequest()->CloseHandles();
 		return 9;
 	}
-	fputs("5",f);
 	wVersionRequested =MAKEWORD( 2, 0 );
 	ret = WSAStartup( wVersionRequested, &wsaData );
-	fputs("6",f);
 	if ( ret  ) return 33;
 	he=gethostbyname(cporIP);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
@@ -545,7 +531,6 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		return 30;
 	}
 	//inet_addr
-	fputs("7",f);
 	g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
 	he=gethostbyname(cpreIP);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
@@ -562,7 +547,6 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	}
 	g_Inent.m_IPSrcAddressRangeEnd=ntohl(g_dwrediIP);
 	g_Inent.m_IPSrcAddressRangeStart=ntohl(g_dwrediIP);
-	fputs("8",f);
 	
 	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
 	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
@@ -579,8 +563,6 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		g_hMainThread=0;
 		return 12;
 	}
-	fputs("9",f);
-	fclose(f);
 	return 0;
 }
 void WINAPI DllInit()
