@@ -11,7 +11,9 @@
 端口号 无符号 short 
    返回类型为UINT 0表示成功，其他为错误代码
 
-  * Free 函数 释放重定向设置 返回类型为UINT 0表示成功，其他为错误代码
+  * Free 函数 释放重定向设置 
+一个输入参数 byte 类型，0为不释放 PcaFilterApi.dll 资源 ，1为释放
+返回类型为UINT 0表示成功，其他为错误代码
 
 = 具体使用方法 =
   * 下载对应的 IP Packet Redirector Driver 地址见 介绍那里
