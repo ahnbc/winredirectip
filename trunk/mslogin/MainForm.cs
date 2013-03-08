@@ -47,10 +47,13 @@ namespace mslogin
     //    EndCall pEndCall;
     //    
 
-      //  Thread mainthread;
-       // static  UInt32 mainworkret;
+     //   Thread mainthread;
+     //   static  UInt32 mainworkret;
+
+
 		LangString ls;
         Boolean Opened = false;
+        Boolean Worked = false;
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
 			{"Chinese","221.231.130.70"}
@@ -149,6 +152,17 @@ namespace mslogin
 		{
 
 		}
+    /*   static void  MainWork(object para)
+        {
+            object[] data = (object [])para;
+            mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
+            if (mainworkret != 0)
+            {
+                MessageBox.Show(mainworkret.ToString() + ":" + ls.get("msg/m" + mainworkret));
+                return;
+            }
+
+        }*/
 
 		void CommitClick(object sender, EventArgs e)
 		{
@@ -163,14 +177,26 @@ namespace mslogin
 				MessageBox.Show(ls.get("imsg/m2"));
 				return;
 			}
+            object[] data = new object[]
+            {
+                AdaptorcomboBox.Text.Clone(),
+                locamap[LocationBox.Text].Clone(),
+                ipBox.Text.Clone()
+            };
+            if (Worked)
+                Free(0);
              ret = redirIp(AdaptorcomboBox.Text, locamap[LocationBox.Text], ipBox.Text, (byte)1, (UInt16)0);
            // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
-            if (ret != 0)
-            {
-                MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                return;
-            }
-
+          //  mainthread = new Thread(MainWork);
+           // mainthread.Start(data);
+             if (ret != 0)
+             {
+                 MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                 StatusLabel.Text = ls.get("StatusLabel_3");
+                 return;
+             }
+             Worked = true;
+             StatusLabel.Text = ls.get("StatusLabel_2"+ipBox.Text);
 		/*	*/
 		}
 		
@@ -181,9 +207,13 @@ namespace mslogin
                 WritePrivateProfileString("conf", "ip", ipBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "loc", LocationBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "dev", AdaptorcomboBox.Text, "./conf.ini");
-                //Free(1);
             }
            
 		}
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+             if (Opened)Free(1);
+        }
 	}
 }
