@@ -166,7 +166,8 @@ void AtExit(void)
 }
  UINT  WINAPI Free(const byte freelib)
 {
-	DWORD code,ret;
+	DWORD code;
+	static int ret=0;
 	DeleteCriticalSection(&cs);
 	ret=DrvCall::Init();
 	if(ret)
@@ -181,8 +182,9 @@ void AtExit(void)
 	ret=GetExitCodeThread(g_hInThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
+		if(freelib)
+		TerminateThread(g_hInThread,1);
 		WaitForSingleObject(g_hInThread,INFINITE);
-		//TerminateThread(g_hInThread,1);
 		CloseHandle(g_hInThread);
 		g_hInThread=NULL;
 	}
@@ -192,7 +194,8 @@ void AtExit(void)
 	ret=GetExitCodeThread(g_hOutThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
-		//TerminateThread(g_hOutThread,1);
+		if(freelib)
+		TerminateThread(g_hOutThread,1);
 		WaitForSingleObject(g_hOutThread,INFINITE);
 		CloseHandle(g_hOutThread);
 		g_hOutThread=NULL;
@@ -203,8 +206,9 @@ void AtExit(void)
 	ret=GetExitCodeThread(g_hMainThread,&code);
 	if(ret==STILL_ACTIVE)
 	{
+		if(freelib)
+		TerminateThread(g_hMainThread,1);
 		WaitForSingleObject(g_hMainThread,INFINITE);
-		//TerminateThread(g_hMainThread,1);
 		CloseHandle(g_hMainThread);
 		g_hMainThread=NULL;
 	}
@@ -414,6 +418,7 @@ __write:
 	 while(1)
 	 {
 		 SleepEx(0x1f4,1);
+		 if(g_cpAdp==NULL)break;
 		 ret=(byDirect==IN_DIRECT?
 			 g_cpAdp->isInHandleOpen():
 			 g_cpAdp->isOutHandleOpen());
@@ -442,20 +447,14 @@ static unsigned __stdcall MainWork(void * pList)
 	unsigned  InID,OutID;
 	if(!g_hInThread)
 	g_hInThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
-	if(!g_hOutThread)
-	g_hOutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
-	if(!g_hInThread)
+	if((!g_hInThread)||g_hInThread==INVALID_HANDLE_VALUE)
 	{
-		if(g_hOutThread)
-		{
-			//TerminateThread(g_hOutThread,1);
-			WaitForSingleObject(g_hOutThread,INFINITE);
-			CloseHandle(g_hOutThread);
-			g_hOutThread=0;
-		}
 		return 0;
 	}
+
 	if(!g_hOutThread)
+	g_hOutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
+	if((!g_hOutThread)||g_hOutThread==INVALID_HANDLE_VALUE)
 	{
 		//TerminateThread(g_hInThread,1);
 		WaitForSingleObject(g_hInThread,INFINITE);
@@ -474,7 +473,8 @@ static unsigned __stdcall MainWork(void * pList)
 UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreIP[],const UCHAR proto,const USHORT wport)
 {
 	
-	int i=0,size=0,j=0,ret=0;
+	int i=0,size=0,j=0;
+	static int ret=0;
 	BindList *list;
 	unsigned  MainID;
 	hostent * he;
@@ -551,10 +551,9 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
 	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
 
-	MainWork(NULL);
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
-  /* g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
+   g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
    	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
 	{
 		//err 12 主线程启动失败
@@ -563,7 +562,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		CloseHandle(g_hMainThread);
 		g_hMainThread=0;
 		return 12;
-	}*/
+	}
 	return 0;
 }
 void WINAPI DllInit()
@@ -600,10 +599,10 @@ BOOL WINAPI
 	switch (dwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-	case DLL_THREAD_ATTACH:
+	//case DLL_THREAD_ATTACH:
 		DllInit();
 		break;
-	case DLL_THREAD_DETACH:
+	//case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 		Free(1);
 		break;
@@ -681,18 +680,17 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
-    printf("Running \n");
+
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
 		printf("Error Back:%d\n",ret);
 	}
-	/*else
 	{
-		
+		    printf("Running \n");
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
-	}*/
+	}
 	printf("End\n");
 	system("pause");
 	return 0;
