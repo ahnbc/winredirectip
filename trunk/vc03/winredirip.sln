@@ -6,11 +6,14 @@ EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
+		Dll = Dll
 		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Debug.ActiveCfg = Debug|Win32
 		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Debug.Build.0 = Debug|Win32
+		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Dll.ActiveCfg = Dll|Win32
+		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Dll.Build.0 = Dll|Win32
 		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Release.ActiveCfg = Release|Win32
 		{5C79E5C6-B096-4B2F-AB64-525D23A7799D}.Release.Build.0 = Release|Win32
 	EndGlobalSection
