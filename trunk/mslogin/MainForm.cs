@@ -41,17 +41,17 @@ namespace mslogin
                                                              string val, string filePath);
 
     //    private delegate UInt32 BeginCall();
-    //    private delegate UInt32 EndCall(int i);
+        private delegate void pStatusLabSet(string i);
 
-    //    BeginCall pBeginCall;
+        pStatusLabSet StatusLableSet;
     //    EndCall pEndCall;
     //    
 
-     //   Thread mainthread;
+      //  Thread mainthread;
      //   static  UInt32 mainworkret;
 
 
-		LangString ls;
+		 LangString ls;
         Boolean Opened = false;
         Boolean Worked = false;
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
@@ -84,7 +84,10 @@ namespace mslogin
           //  pEndCall = dEndCall;
 			
 		}
-		
+        void StatusLabSet(string i)
+        {
+            StatusLabel.Text = i;
+        }
 		void MainFormLoad(object sender, EventArgs e)
 		{	
 		if(ls==null)Close();
@@ -111,6 +114,7 @@ namespace mslogin
 			string[] ips=(string [])(mo["IPAddress"]);
 			if (ips!=null)
 			{
+                if (!AdaptorcomboBox.Items.Contains(ips[0]))
 				AdaptorcomboBox.Items.Add(ips[0]);
 			}
 			
@@ -120,6 +124,7 @@ namespace mslogin
 			if(((string)AdaptorcomboBox.Items[i]).Equals(dev))select=i;
 		AdaptorcomboBox.SelectedIndex=select;
 		ipBox.Text=ip;
+        StatusLableSet=StatusLabSet;
         Opened = true;
 		}
 		
@@ -152,21 +157,25 @@ namespace mslogin
 		{
 
 		}
-    /*   static void  MainWork(object para)
+        void  MainWork(object para)
         {
             object[] data = (object [])para;
-            mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
-            if (mainworkret != 0)
+            Worked = true;
+            UInt32 ret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
+            if (ret != 0)
             {
-                MessageBox.Show(mainworkret.ToString() + ":" + ls.get("msg/m" + mainworkret));
+                Worked = false;
+                MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                 this.Invoke(StatusLableSet,new object []{ls.get("StatusLabel_3")});
                 return;
             }
 
-        }*/
+        }
 
 		void CommitClick(object sender, EventArgs e)
 		{
             UInt32 ret = 0;
+            StatusLabel.Text = ls.get("StatusLabel_1") + ipBox.Text;
 			if(ipBox.Text=="")
 			{
 				MessageBox.Show(ls.get("imsg/m1"));
@@ -184,19 +193,41 @@ namespace mslogin
                 ipBox.Text.Clone()
             };
             if (Worked)
-                Free(0);
+            {
+                ret=Free(0);
+                if (ret > 0)
+                {
+                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                    StatusLabel.Text = ls.get("StatusLabel_3");
+                    return;
+                }
+                Worked = false;
+              /*  if (mainthread.IsAlive)
+                    try
+                    {
+                            mainthread.Abort();
+                    }
+                    
+                     catch
+                    {
+                        
+                        }*/
+            }
              ret = redirIp(AdaptorcomboBox.Text, locamap[LocationBox.Text], ipBox.Text, (byte)1, (UInt16)0);
            // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
+           // 
+       
           //  mainthread = new Thread(MainWork);
-           // mainthread.Start(data);
+          //  mainthread.Start(data);
              if (ret != 0)
              {
                  MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
                  StatusLabel.Text = ls.get("StatusLabel_3");
                  return;
              }
+             
+             StatusLabel.Text = ls.get("StatusLabel_2")+ipBox.Text;
              Worked = true;
-             StatusLabel.Text = ls.get("StatusLabel_2"+ipBox.Text);
 		/*	*/
 		}
 		
