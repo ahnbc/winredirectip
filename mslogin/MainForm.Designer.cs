@@ -36,6 +36,7 @@ namespace mslogin
 		/// </summary>
 		private void InitializeComponent()
 		{
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.UI1 = new System.Windows.Forms.Label();
             this.AdaptorcomboBox = new System.Windows.Forms.ComboBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
@@ -140,6 +141,7 @@ namespace mslogin
             this.Controls.Add(this.AdaptorcomboBox);
             this.Controls.Add(this.UI1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
