@@ -551,9 +551,10 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
 	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
 
+	MainWork(NULL);
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
-   g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
+  /* g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
    	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
 	{
 		//err 12 主线程启动失败
@@ -562,7 +563,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 		CloseHandle(g_hMainThread);
 		g_hMainThread=0;
 		return 12;
-	}
+	}*/
 	return 0;
 }
 void WINAPI DllInit()
@@ -680,17 +681,18 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
+    printf("Running \n");
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
 		printf("Error Back:%d\n",ret);
 	}
-	else
+	/*else
 	{
-		printf("Running \n");
+		
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
-	}
+	}*/
 	printf("End\n");
 	system("pause");
 	return 0;
