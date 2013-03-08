@@ -11,7 +11,12 @@
     return type is UINT 0=succeed，otherwise return error code
  * Free : free all resource and clear net filter hook 
     one parameter byte type 1=freelibrary 0=no
+
     return type is UINT 0=succeed，otherwise return error code
+
+* DllInit call when you  use loadlibraryex load_as_data flag
+  it also will be called by dllentry 
+    no parameter  no return
 
 =  How to Use =
  
