@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>\DEVICE\{C8B74B4D-522E-46AB-B881-DC05398A8896}  221.231.130.70 112.101.64.80</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>\DEVICE\{C8B74B4D-522E-46AB-B881-DC05398A8896}  221.231.130.70 ipadmxd.tk</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

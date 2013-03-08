@@ -185,9 +185,9 @@ void AtExit(void)
 		if(freelib)
 		TerminateThread(g_hInThread,1);
 		WaitForSingleObject(g_hInThread,INFINITE);
-		CloseHandle(g_hInThread);
-		g_hInThread=NULL;
 	}
+	CloseHandle(g_hInThread);
+	g_hInThread=NULL;
 	}
 	if(g_hOutThread!=NULL)
 	{
@@ -197,9 +197,10 @@ void AtExit(void)
 		if(freelib)
 		TerminateThread(g_hOutThread,1);
 		WaitForSingleObject(g_hOutThread,INFINITE);
+		
+	}
 		CloseHandle(g_hOutThread);
 		g_hOutThread=NULL;
-	}
 	}
 	if(g_hMainThread!=NULL)
 	{
@@ -209,9 +210,10 @@ void AtExit(void)
 		if(freelib)
 		TerminateThread(g_hMainThread,1);
 		WaitForSingleObject(g_hMainThread,INFINITE);
+		
+	}
 		CloseHandle(g_hMainThread);
 		g_hMainThread=NULL;
-	}
 	}
 	if(freelib)
 	DrvCall::Free();//may be not needed
@@ -553,6 +555,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
+	//MainWork(NULL);
    g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
    	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
 	{
@@ -680,13 +683,15 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
-
+	//printf("Running \n");
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
 		printf("Error Back:%d\n",ret);
 	}
 	{
 		    printf("Running \n");
+			Sleep(1000);
+			Free(0);
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
