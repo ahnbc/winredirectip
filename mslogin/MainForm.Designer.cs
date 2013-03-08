@@ -46,6 +46,7 @@ namespace mslogin
             this.UI3 = new System.Windows.Forms.Label();
             this.ipBox = new System.Windows.Forms.TextBox();
             this.Commit = new System.Windows.Forms.Button();
+            this.SetPath = new System.Windows.Forms.Button();
             this.statusStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -119,19 +120,30 @@ namespace mslogin
             // 
             // Commit
             // 
-            this.Commit.Location = new System.Drawing.Point(68, 179);
+            this.Commit.Location = new System.Drawing.Point(10, 170);
             this.Commit.Name = "Commit";
-            this.Commit.Size = new System.Drawing.Size(127, 31);
+            this.Commit.Size = new System.Drawing.Size(122, 31);
             this.Commit.TabIndex = 7;
             this.Commit.Text = "Commit";
             this.Commit.UseVisualStyleBackColor = true;
             this.Commit.Click += new System.EventHandler(this.CommitClick);
+            // 
+            // SetPath
+            // 
+            this.SetPath.Location = new System.Drawing.Point(138, 170);
+            this.SetPath.Name = "SetPath";
+            this.SetPath.Size = new System.Drawing.Size(102, 31);
+            this.SetPath.TabIndex = 8;
+            this.SetPath.Text = "SetPath";
+            this.SetPath.UseVisualStyleBackColor = true;
+            this.SetPath.Click += new System.EventHandler(this.SetPath_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(257, 242);
+            this.Controls.Add(this.SetPath);
             this.Controls.Add(this.Commit);
             this.Controls.Add(this.ipBox);
             this.Controls.Add(this.UI3);
@@ -165,5 +177,6 @@ namespace mslogin
 		private System.Windows.Forms.Button Commit;
 		private System.Windows.Forms.StatusStrip statusStrip;
 		private System.Windows.Forms.ComboBox AdaptorcomboBox;
+        private System.Windows.Forms.Button SetPath;
 	}
 }
