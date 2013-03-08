@@ -16,6 +16,7 @@ using System.Collections;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Diagnostics;
 namespace mslogin
 {
 	/// <summary>
@@ -52,6 +53,7 @@ namespace mslogin
 
 
 		 LangString ls;
+         string filepath="";
         Boolean Opened = false;
         Boolean Worked = false;
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
@@ -76,6 +78,7 @@ namespace mslogin
 			UI1.Text=ls.get("UI1");
 			UI2.Text=ls.get("UI2");
 			UI3.Text=ls.get("UI3");
+            SetPath.Text = ls.get("UI4");
 			Commit.Text=ls.get("Commit");
 			StatusLabel.Text=ls.get("StatusLabel_1");
 			}
@@ -100,13 +103,15 @@ namespace mslogin
             MessageBox.Show(ls.get("msg/m1"));
             Close();
         }
-		StringBuilder sb=new StringBuilder(50);
-		GetPrivateProfileString("conf","ip","",sb,50,"./conf.ini");
+		StringBuilder sb=new StringBuilder(100);
+		GetPrivateProfileString("conf","ip","",sb,100,"./conf.ini");
 		string ip=sb.ToString();
-		GetPrivateProfileString("conf","loc","",sb,50,"./conf.ini");
+		GetPrivateProfileString("conf","loc","",sb,100,"./conf.ini");
 		string loc=sb.ToString();
-		GetPrivateProfileString("conf","dev","",sb,50,"./conf.ini");
+		GetPrivateProfileString("conf","dev","",sb,100,"./conf.ini");
 		string dev=sb.ToString();
+        GetPrivateProfileString("conf", "path", "", sb, 100, "./conf.ini");
+        filepath = sb.ToString();
 		int select=0;
 		ManagementClass   mc   =   new   ManagementClass( "Win32_NetworkAdapterConfiguration"); 
 		ManagementObjectCollection   moc   =   mc.GetInstances(); 
@@ -175,7 +180,12 @@ namespace mslogin
 		void CommitClick(object sender, EventArgs e)
 		{
             UInt32 ret = 0;
-            StatusLabel.Text = ls.get("StatusLabel_1") + ipBox.Text;
+            StatusLabel.Text = ls.get("StatusLabel_1");
+            if (!File.Exists(filepath))
+            {
+                MessageBox.Show(ls.get("imsg/m4"));
+                return;
+            }
 			if(ipBox.Text=="")
 			{
 				MessageBox.Show(ls.get("imsg/m1"));
@@ -228,6 +238,10 @@ namespace mslogin
              
              StatusLabel.Text = ls.get("StatusLabel_2")+ipBox.Text;
              Worked = true;
+             Process Maple = new Process();
+                Maple.StartInfo.FileName = filepath;
+                Maple.StartInfo.Arguments = "221.231.130.70 8484";
+                Maple.Start();
 		/*	*/
 		}
 		
@@ -238,6 +252,7 @@ namespace mslogin
                 WritePrivateProfileString("conf", "ip", ipBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "loc", LocationBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "dev", AdaptorcomboBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "path", filepath, "./conf.ini");
             }
            
 		}
@@ -245,6 +260,17 @@ namespace mslogin
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
              if (Opened)Free(1);
+        }
+
+        private void SetPath_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "MsMainFile|MapleStory.exe";
+            ofd.CheckPathExists = true;
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                filepath = ofd.FileName;
+            }
         }
 	}
 }
