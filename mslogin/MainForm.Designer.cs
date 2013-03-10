@@ -42,7 +42,7 @@ namespace mslogin
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.UI2 = new System.Windows.Forms.Label();
-            this.LocationBox = new System.Windows.Forms.ComboBox();
+            this.localeBox = new System.Windows.Forms.ComboBox();
             this.UI3 = new System.Windows.Forms.Label();
             this.ipBox = new System.Windows.Forms.TextBox();
             this.Commit = new System.Windows.Forms.Button();
@@ -92,18 +92,18 @@ namespace mslogin
             this.UI2.Name = "UI2";
             this.UI2.Size = new System.Drawing.Size(232, 18);
             this.UI2.TabIndex = 3;
-            this.UI2.Text = "MS Location:";
+            this.UI2.Text = "MS locale:";
             // 
-            // LocationBox
+            // localeBox
             // 
-            this.LocationBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.LocationBox.FormattingEnabled = true;
-            this.LocationBox.Items.AddRange(new object[] {
+            this.localeBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.localeBox.FormattingEnabled = true;
+            this.localeBox.Items.AddRange(new object[] {
             "Chinese"});
-            this.LocationBox.Location = new System.Drawing.Point(54, 84);
-            this.LocationBox.Name = "LocationBox";
-            this.LocationBox.Size = new System.Drawing.Size(186, 20);
-            this.LocationBox.TabIndex = 4;
+            this.localeBox.Location = new System.Drawing.Point(54, 84);
+            this.localeBox.Name = "localeBox";
+            this.localeBox.Size = new System.Drawing.Size(186, 20);
+            this.localeBox.TabIndex = 4;
             // 
             // UI3
             // 
@@ -168,7 +168,7 @@ namespace mslogin
             this.Controls.Add(this.Commit);
             this.Controls.Add(this.ipBox);
             this.Controls.Add(this.UI3);
-            this.Controls.Add(this.LocationBox);
+            this.Controls.Add(this.localeBox);
             this.Controls.Add(this.UI2);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.AdaptorcomboBox);
@@ -192,7 +192,7 @@ namespace mslogin
 		private System.Windows.Forms.TextBox ipBox;
 		private System.Windows.Forms.Label UI2;
 		private System.Windows.Forms.Label UI3;
-		private System.Windows.Forms.ComboBox LocationBox;
+		private System.Windows.Forms.ComboBox localeBox;
 		private System.Windows.Forms.Label UI1;
 		private System.Windows.Forms.ToolStripStatusLabel StatusLabel;
 		private System.Windows.Forms.Button Commit;
