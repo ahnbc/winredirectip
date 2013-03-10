@@ -17,6 +17,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Diagnostics;
+using System.Net.Sockets;
 namespace mslogin
 {
 	/// <summary>
@@ -56,6 +57,7 @@ namespace mslogin
          string filepath="";
         Boolean Opened = false;
         Boolean Worked = false;
+        string lastip = "";
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
 			{"Chinese","221.231.130.70"}
@@ -79,6 +81,7 @@ namespace mslogin
 			UI2.Text=ls.get("UI2");
 			UI3.Text=ls.get("UI3");
             SetPath.Text = ls.get("UI4");
+            Check.Text = ls.get("UI5");
 			Commit.Text=ls.get("Commit");
 			StatusLabel.Text=ls.get("StatusLabel_1");
 			}
@@ -112,6 +115,8 @@ namespace mslogin
 		string dev=sb.ToString();
         GetPrivateProfileString("conf", "path", "", sb, 100, "./conf.ini");
         filepath = sb.ToString();
+        GetPrivateProfileString("conf", "port", "8484", sb, 100, "./conf.ini");
+        portBox.Text = sb.ToString();
 		int select=0;
 		ManagementClass   mc   =   new   ManagementClass( "Win32_NetworkAdapterConfiguration"); 
 		ManagementObjectCollection   moc   =   mc.GetInstances(); 
@@ -176,10 +181,33 @@ namespace mslogin
             }
 
         }
+        string[] CheckServer(string testip,ushort testport)
+        {
+            byte[] buff=new byte[100];
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try { 
+            sock.Connect(testip,(int) testport);}
+            catch
+            {
+                return null;
+            }
+            sock.Receive(buff, 100, SocketFlags.None);
+            int tmp;
+            string[] ret = new string[3];
+            tmp = buff[2];
+            tmp += (int)buff[3] << 8;
+            ret[0] = tmp.ToString();
+            ret[1] = (buff[6] - 0x30).ToString();
+            ret[2] = buff[15].ToString();
+            sock.Close();
+            return ret;
+        }
+
 
 		void CommitClick(object sender, EventArgs e)
 		{
             UInt32 ret = 0;
+            ushort ipport;
             StatusLabel.Text = ls.get("StatusLabel_1");
             if (!File.Exists(filepath))
             {
@@ -191,11 +219,24 @@ namespace mslogin
 				MessageBox.Show(ls.get("imsg/m1"));
 				return;
 			}
+            if (!ushort.TryParse(portBox.Text,out ipport))
+            {
+                MessageBox.Show(ls.get("imsg/m5"));
+                return;
+            }
+            string[] result = CheckServer(ipBox.Text, ipport);
+            if (result == null)
+            {
+                MessageBox.Show(ls.get("imsg/m6"));
+                return;
+            }
 			if(!locamap.ContainsKey(LocationBox.Text))
 			{
 				MessageBox.Show(ls.get("imsg/m2"));
 				return;
 			}
+            if(lastip!=ipBox.Text)
+            {          
             object[] data = new object[]
             {
                 AdaptorcomboBox.Text.Clone(),
@@ -223,7 +264,7 @@ namespace mslogin
                         
                         }*/
             }
-             ret = redirIp(AdaptorcomboBox.Text, locamap[LocationBox.Text], ipBox.Text, (byte)1, (UInt16)0);
+            
            // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
            // 
        
@@ -237,11 +278,13 @@ namespace mslogin
              }
              
              StatusLabel.Text = ls.get("StatusLabel_2")+ipBox.Text;
+            }
              Worked = true;
              Process Maple = new Process();
                 Maple.StartInfo.FileName = filepath;
-                Maple.StartInfo.Arguments = "221.231.130.70 8484";
+                Maple.StartInfo.Arguments =locamap[LocationBox.Text]+" "+portBox.Text;
                 Maple.Start();
+                lastip = ipBox.Text.Clone().ToString();
 		/*	*/
 		}
 		
@@ -253,6 +296,7 @@ namespace mslogin
                 WritePrivateProfileString("conf", "loc", LocationBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "dev", AdaptorcomboBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "path", filepath, "./conf.ini");
+                WritePrivateProfileString("conf", "port", portBox.Text, "./conf.ini");
             }
            
 		}
@@ -271,6 +315,28 @@ namespace mslogin
             {
                 filepath = ofd.FileName;
             }
+        }
+
+        private void Check_Click(object sender, EventArgs e)
+        {
+            ushort ipport;
+            if (ipBox.Text == "")
+            {
+                MessageBox.Show(ls.get("imsg/m1"));
+                return;
+            }
+            if (!ushort.TryParse(portBox.Text, out ipport))
+            {
+                MessageBox.Show(ls.get("imsg/m5"));
+                return;
+            }
+            string[] result = CheckServer(ipBox.Text, ipport);
+            if (result == null)
+            {
+                MessageBox.Show(ls.get("imsg/m6"));
+                return;
+            }
+            MessageBox.Show(string.Format(ls.get("imsg/m7"), result[0], result[1], result[2]));
         }
 	}
 }

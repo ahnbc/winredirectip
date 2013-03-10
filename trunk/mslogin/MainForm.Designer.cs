@@ -47,6 +47,8 @@ namespace mslogin
             this.ipBox = new System.Windows.Forms.TextBox();
             this.Commit = new System.Windows.Forms.Button();
             this.SetPath = new System.Windows.Forms.Button();
+            this.Check = new System.Windows.Forms.Button();
+            this.portBox = new System.Windows.Forms.TextBox();
             this.statusStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -71,7 +73,7 @@ namespace mslogin
             // 
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabel});
-            this.statusStrip.Location = new System.Drawing.Point(5, 220);
+            this.statusStrip.Location = new System.Drawing.Point(5, 254);
             this.statusStrip.Name = "statusStrip";
             this.statusStrip.Size = new System.Drawing.Size(252, 22);
             this.statusStrip.SizingGrip = false;
@@ -113,9 +115,9 @@ namespace mslogin
             // 
             // ipBox
             // 
-            this.ipBox.Location = new System.Drawing.Point(54, 143);
+            this.ipBox.Location = new System.Drawing.Point(13, 143);
             this.ipBox.Name = "ipBox";
-            this.ipBox.Size = new System.Drawing.Size(186, 21);
+            this.ipBox.Size = new System.Drawing.Size(134, 21);
             this.ipBox.TabIndex = 6;
             // 
             // Commit
@@ -138,11 +140,30 @@ namespace mslogin
             this.SetPath.UseVisualStyleBackColor = true;
             this.SetPath.Click += new System.EventHandler(this.SetPath_Click);
             // 
+            // Check
+            // 
+            this.Check.Location = new System.Drawing.Point(76, 207);
+            this.Check.Name = "Check";
+            this.Check.Size = new System.Drawing.Size(106, 34);
+            this.Check.TabIndex = 9;
+            this.Check.Text = "Check";
+            this.Check.UseVisualStyleBackColor = true;
+            this.Check.Click += new System.EventHandler(this.Check_Click);
+            // 
+            // portBox
+            // 
+            this.portBox.Location = new System.Drawing.Point(153, 143);
+            this.portBox.Name = "portBox";
+            this.portBox.Size = new System.Drawing.Size(80, 21);
+            this.portBox.TabIndex = 10;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(257, 242);
+            this.ClientSize = new System.Drawing.Size(257, 276);
+            this.Controls.Add(this.portBox);
+            this.Controls.Add(this.Check);
             this.Controls.Add(this.SetPath);
             this.Controls.Add(this.Commit);
             this.Controls.Add(this.ipBox);
@@ -178,5 +199,7 @@ namespace mslogin
 		private System.Windows.Forms.StatusStrip statusStrip;
 		private System.Windows.Forms.ComboBox AdaptorcomboBox;
         private System.Windows.Forms.Button SetPath;
+        private System.Windows.Forms.Button Check;
+        private System.Windows.Forms.TextBox portBox;
 	}
 }
