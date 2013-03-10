@@ -10,9 +10,9 @@ class BindList
 	public:
 	static BOOL initFlag;
 	static  BindList *getAllBindList();
-	const BindAdapter * getByMac(string mac)const ;
-	const BindAdapter * getByIP(string ip) const;
-	const BindAdapter * getByName(string s) const;
+	const BindAdapter * getByMac(wstring mac)const ;
+	const BindAdapter * getByIP(wstring ip) const;
+	const BindAdapter * getByName(wstring s) const;
 	static uint GetError();
 	uint getSize();
 	const vector<BindAdapter> *getLists() const;

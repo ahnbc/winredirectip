@@ -11,7 +11,7 @@
 #include "BindList.h"
 #include "vector"
 #include "getopt.h"
-
+#include "wchar.h"
 
 
 #pragma comment(lib, "IPHLPAPI.lib")
@@ -472,7 +472,7 @@ static unsigned __stdcall MainWork(void * pList)
 	return 0;
 }
 
-UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreIP[],const UCHAR proto,const USHORT wport)
+UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wchar_t cpreIP[],const UCHAR proto,const USHORT wport)
 {
 	
 	int i=0,size=0,j=0;
@@ -482,6 +482,7 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	hostent * he;
 	WORD wVersionRequested;
 	WSADATA wsaData;
+	char * chrtmp;
 	if(IsWow64Current())return 40;
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
@@ -493,15 +494,15 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	{
 		return BindList::GetError();
 	}
-	if(strstr(szDevName,"\\DEVICE\\")==szDevName)
-		g_cpAdp=list->getByName(string(szDevName));
-	else if (strstr(szDevName,".")!=NULL)
+	if(wcsstr(szDevName,L"\\DEVICE\\")==szDevName)
+		g_cpAdp=list->getByName(wstring(szDevName));
+	else if (wcsstr(szDevName,L".")!=NULL)
 	{
-		g_cpAdp=list->getByIP(string(szDevName));
+		g_cpAdp=list->getByIP(wstring(szDevName));
 	}
 	else
 	{
-		g_cpAdp=list->getByMac(string(szDevName));
+		g_cpAdp=list->getByMac(wstring(szDevName));
 		
 	}
 	if(g_cpAdp==NULL)
@@ -526,20 +527,26 @@ UINT  WINAPI redirIP(const char szDevName[],const char cporIP[],const char cpreI
 	wVersionRequested =MAKEWORD( 2, 0 );
 	ret = WSAStartup( wVersionRequested, &wsaData );
 	if ( ret  ) return 33;
-	he=gethostbyname(cporIP);
+	chrtmp=(char *)malloc(100);
+	memset(chrtmp,0,100);
+	wcstombs(chrtmp,cporIP,100);
+	he=gethostbyname(chrtmp);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
 	{
-		printf("Get Ip Error:%d\n",WSAGetLastError());
+		wprintf(L"Get Ip Error:%d\n",WSAGetLastError());
 		return 30;
 	}
 	//inet_addr
 	g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
-	he=gethostbyname(cpreIP);
+	memset(chrtmp,0,100);
+	wcstombs(chrtmp,cpreIP,100);
+	he=gethostbyname(chrtmp);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
 	{
 		return 31;
 	}
 	g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
+	free(chrtmp);
 	WSACleanup();
 	if(g_dworgIP==MAXFF||g_dwrediIP==MAXFF)
 	{
@@ -617,7 +624,7 @@ BOOL WINAPI
 
 
 
-int  main(int argc,char ** argv)
+int  wmain(int argc,wchar_t ** argv)
 {
 	//221.231.130.70
 	//uchar mIP[4]={60,176,43,163};
@@ -636,49 +643,49 @@ if(argc ==1){
 	list=BindList::getAllBindList();
 	if(list==NULL)
 	{
-		printf("Error No:%d\n",BindList::GetError());
+		wprintf(L"Error No:%d\n",BindList::GetError());
 		system("pause");
 		return 0;
 	}
-	printf("Support Adapter List:\n");
+	wprintf(L"Support Adapter List:\n");
 	for(it=list->getLists()->begin();it!=list->getLists()->end();it++)
 	{
 		if(!it->getDesc()->empty())
-		printf("\t%s\n",it->getDesc()->c_str());
+		wprintf(L"\t%ls\n",it->getDesc()->c_str());
 		if(!it->getName()->empty())
-			printf("\t%s\n",it->getName()->c_str());
+			wprintf(L"\t%ls\n",it->getName()->c_str());
 		if(!it->getIp()->empty())
-		printf("\t%s\n",it->getIp()->c_str());
+		wprintf(L"\t%ls\n",it->getIp()->c_str());
 		if(!it->getMac()->empty())
-		printf("\t%s\n",it->getMac()->c_str());
-		printf("------------------------------------\n");
+		wprintf(L"\t%ls\n",it->getMac()->c_str());
+		wprintf(L"------------------------------------\n");
 	}
 	system("pause");
 	return 0;
 }
 	mPort=0;
 	mPro=0;
-	while(ch=getopt_a(argc,argv,"p:o:")!=-1)
+	while(ch=getopt_w(argc,argv,L"p:o:")!=-1)
 	{
 		switch(ch)
 		{
-		case 'p':
-			mPort=(USHORT)atoi(optarg_a);
+		case L'p':
+			mPort=(USHORT)wcstol(optarg_w,NULL,10);
 			break;
-		case 'o':
-			mPro=(UCHAR)atoi(optarg_a);
+		case L'o':
+			mPro=(UCHAR)wcstol(optarg_w,NULL,10);
 			break;
 		}
 	}
 	if(mPro>2)
 	{
-		printf("Protocol 1=TCP 2=UDP 0=BOTH .\n");
+		wprintf(L"Protocol 1=TCP 2=UDP 0=BOTH .\n");
 		return 0;
 	}
 
 	 if((argc-optind) !=3)
 	{
-		printf("Arguments number is not 3.\n");
+		wprintf(L"Arguments number is not 3.\n");
 		system("pause");
 		return 0;
 	}
@@ -686,15 +693,15 @@ if(argc ==1){
 	//printf("Running \n");
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
-		printf("Error Back:%d\n",ret);
+		wprintf(L"Error Back:%d\n",ret);
 	}
 	{
-		    printf("Running \n");
+		    wprintf(L"Running \n");
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
 	}
-	printf("End\n");
+	wprintf(L"End\n");
 	system("pause");
 	return 0;
 }

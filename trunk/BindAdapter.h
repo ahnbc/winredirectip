@@ -7,30 +7,30 @@ using namespace std;
 class BindAdapter
 {
 public:
-	BindAdapter(const char *vname,const char *name);
-	static UINT strMacConv(string,USHORT *) ;
-	static UINT MactoStr(USHORT *,char *) ;
+	BindAdapter(const wchar_t *vname,const wchar_t *name);
+	static UINT strMacConv(wstring,USHORT *) ;
+	static UINT MactoStr(USHORT *,wchar_t *) ;
 
-	const string * getvName() const{return &m_svAdapter;};
-	const string * getName() const{return &m_sAdapter;};
-	const string * getMac() const{return &m_sMac;};
-	const string * getDesc() const{return &m_sDesc;};
-	const string * getIp() const{return &m_sIP;};
+	const wstring * getvName() const{return &m_svAdapter;};
+	const wstring * getName() const{return &m_sAdapter;};
+	const wstring * getMac() const{return &m_sMac;};
+	const wstring * getDesc() const{return &m_sDesc;};
+	const wstring * getIp() const{return &m_sIP;};
 	UINT getType() const {return m_nType;};
 
-	void setvName(const char * s){m_svAdapter=s;};
-	void setName(const char *s){m_sAdapter=s;};
-	void setIp(const char *s){m_sIP=s;};
+	void setvName(const wchar_t * s){m_svAdapter=s;};
+	void setName(const wchar_t *s){m_sAdapter=s;};
+	void setIp(const wchar_t *s){m_sIP=s;};
 	void setMac(const USHORT *);
-	void setDesc(const char *s){m_sDesc=s ;};
+	void setDesc(const wchar_t *s){m_sDesc=s ;};
 	void setType(UINT s){m_nType=s ;};
 
 	BindAdapter * BeginRequest() const{return const_cast<BindAdapter *>(this);}; 
 
 
-	BOOL isSameMac(string s) const{return m_sMac==s; };
+	BOOL isSameMac(wstring s) const{return m_sMac==s; };
 	BOOL isSameMac(USHORT *) const;
-	BOOL isSameIP(string s) const{ return m_sIP==s;};
+	BOOL isSameIP(wstring s) const{ return m_sIP==s;};
 
 	UINT OpenHandles();
 	UINT OpenInBound();
@@ -130,12 +130,12 @@ public:
 
 private:
 	HANDLE m_hInBound,m_hOutBound;
-	string  m_svAdapter;
-	string  m_sAdapter;
+	wstring  m_svAdapter;
+	wstring  m_sAdapter;
 	USHORT m_Mac[3];
-	string  m_sDesc;
-	string  m_sIP;
+	wstring  m_sDesc;
+	wstring  m_sIP;
 	UINT m_nType;
-	string m_sMac;
+	wstring m_sMac;
 };
 #endif
