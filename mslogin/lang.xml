@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LangString>
 <title zh="冒险岛登录器" en="msLogin" />
-<UI1 zh="网卡接口: " en="NetWork Interface:" />
-<UI2 zh="冒险岛版本类型： " en="MS Location:" />
-<UI3 zh="私服地址或域名： " en="Private Server:(IP or domain)" />
-<UI4 zh="冒险岛路径 " en="Setpath" />
+<UI1 zh="网卡接口:" en="NetWork Interface:" />
+<UI2 zh="冒险岛版本类型：" en="MS Location:" />
+<UI3 zh="私服地址或域名 端口：" en="Private Server:(IP or domain) Port" />
+<UI4 zh="冒险岛路径" en="Setpath" />
+<UI5 zh="检查服务器" en="Check" />
 <StatusLabel_1 zh="准备就绪 " en="Ready" />
 <Commit zh="开始游戏 " en="Start Game" />
 <StatusLabel_2 zh="正在重定向到: " en="Redirecting to:" />
@@ -43,5 +44,8 @@
 <m2 zh="区域不支持" en="Location unsupport" />
 <m3 zh="Api 链接库不存在" en="Api Dll not exist" />
 <m4 zh="冒险岛主文件没找到，请指定" en="Ms Main File  not found,plz set" />
+<m5 zh="端口填写错误" en="Port Error" />
+<m6 zh="服务器不在线" en="Server Offline" />
+<m7 zh="服务器版本:{0},小版本:{1}，区域号:{2}" en="Server ver:{0},path Ver:{1}，Location No:{2}" />
 </imsg>
 </LangString>

@@ -25,7 +25,7 @@ namespace mslogin
 			lang=langname;
 			
 		}
-		public string get(string nodename)
+		public string get(string nodename,string def)
 		{
 			XmlElement root=xmlDoc.DocumentElement;
 			StringBuilder sb=new StringBuilder();
@@ -37,8 +37,12 @@ namespace mslogin
 			try{
 				langnode=node.Attributes[lang];}
 			catch
-			{return "Unknown";}
+			{return def;}
 			return langnode.Value;
+		}
+        public string get(string nodename)
+		{
+            return get(nodename, "Unknown");
 		}
 	}
 }

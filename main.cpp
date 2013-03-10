@@ -690,8 +690,6 @@ if(argc ==1){
 	}
 	{
 		    printf("Running \n");
-			Sleep(1000);
-			Free(0);
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
