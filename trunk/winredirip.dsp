@@ -106,6 +106,10 @@ SOURCE=.\DrvCall.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\getopt.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\main.cpp
 # End Source File
 # End Group
@@ -123,6 +127,10 @@ SOURCE=.\BindList.h
 # Begin Source File
 
 SOURCE=.\DrvCall.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\getopt.h
 # End Source File
 # Begin Source File
 
