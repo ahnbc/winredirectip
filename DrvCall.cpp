@@ -58,13 +58,13 @@ DWORD DrvCall::EnumerateBindings(
 	return 1;
 }
 
-HANDLE DrvCall::OpenVirtualAdapter(const TCHAR *pszAdapterName )
+HANDLE DrvCall::OpenVirtualAdapter(const WCHAR *pszAdapterName )
 {
 	if(pPCASIM_OpenVirtualAdapter)
 	return pPCASIM_OpenVirtualAdapter(pszAdapterName);
 	return INVALID_HANDLE_VALUE;
 }
-HANDLE DrvCall::OpenLowerAdapter(const TCHAR *pszAdapterName )
+HANDLE DrvCall::OpenLowerAdapter(const WCHAR *pszAdapterName )
 {
 	if(pPCASIM_OpenLowerAdapter)
 	return pPCASIM_OpenLowerAdapter(pszAdapterName);
@@ -74,7 +74,7 @@ HANDLE DrvCall::OpenLowerAdapter(const TCHAR *pszAdapterName )
 DWORD DrvCall::GetAdapterVendorDescription( 
 	HANDLE hAdapterHandle, 
 	int * pNdisStatus, 
-	TCHAR *lpBuffer, 
+	WCHAR *lpBuffer, 
 	LPDWORD pBufferSize // Bytes at lpBuffer 
 	){
 
@@ -85,7 +85,7 @@ DWORD DrvCall::GetAdapterVendorDescription(
 UINT DrvCall::OpenIo()
 {
 	if(s_mainIo!=NULL)return 0;
-	s_mainIo=CreateFile(IOName,0xC0000000,0,0,2,0x80,0);
+	s_mainIo=CreateFileW(IOName,0xC0000000,0,0,2,0x80,0);
 	if(s_mainIo==(HANDLE)INVALID_HANDLE_VALUE)
 	{
 		s_mainIo=0;
@@ -100,7 +100,7 @@ UINT DrvCall::OpenLib(){
 		s_mainIo=s_lib=NULL;
 	}
 	if(initFlag==0||s_lib==NULL)
-		s_lib=LoadLibrary("PcaFilterApi.dll");
+		s_lib=LoadLibraryW(L"PcaFilterApi.dll");
 	if(s_lib==NULL)
 	{
 		//err 1 ¿â²»´æÔÚ
@@ -113,13 +113,13 @@ UINT DrvCall::OpenLib(){
 	if(initFlag==0||!pPCASIM_GetAdapterCurrentAddress)
 		pPCASIM_GetAdapterCurrentAddress=(PCASIM_GetAdapterCurrentAddress)GetProcAddress(s_lib,"PCASIM_GetAdapterCurrentAddress");
 	if(initFlag==0||!pPCASIM_OpenVirtualAdapter)
-		pPCASIM_OpenVirtualAdapter=(PCASIM_OpenVirtualAdapter)GetProcAddress(s_lib,"PCASIM_OpenVirtualAdapterA");
+		pPCASIM_OpenVirtualAdapter=(PCASIM_OpenVirtualAdapter)GetProcAddress(s_lib,"PCASIM_OpenVirtualAdapterW");
 	if(initFlag==0||!pPCASIM_EnumerateBindings)
 		pPCASIM_EnumerateBindings=(PCASIM_EnumerateBindings)GetProcAddress(s_lib,"PCASIM_EnumerateBindings");
 	if(initFlag==0||!pPCASIM_OpenLowerAdapter)
-		pPCASIM_OpenLowerAdapter=(PCASIM_OpenLowerAdapter)GetProcAddress(s_lib,"PCASIM_OpenLowerAdapterA");
+		pPCASIM_OpenLowerAdapter=(PCASIM_OpenLowerAdapter)GetProcAddress(s_lib,"PCASIM_OpenLowerAdapterW");
 	if(initFlag==0||!pPCASIM_GetAdapterVendorDescription)
-		pPCASIM_GetAdapterVendorDescription=(PCASIM_GetAdapterVendorDescription)GetProcAddress(s_lib,"PCASIM_GetAdapterVendorDescriptionA");
+		pPCASIM_GetAdapterVendorDescription=(PCASIM_GetAdapterVendorDescription)GetProcAddress(s_lib,"PCASIM_GetAdapterVendorDescriptionW");
 	if(initFlag==0||!pPCASIM_GetDriverCapability)
 		pPCASIM_GetDriverCapability=(PCASIM_GetDriverCapability)GetProcAddress(s_lib,"PCASIM_GetDriverCapability");
 	if((!pPCASIM_ResetPktRedirFilter)||

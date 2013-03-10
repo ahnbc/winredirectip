@@ -21,16 +21,16 @@ typedef  DWORD
 	); 
 
 typedef HANDLE ( WINAPI *
-				PCASIM_OpenVirtualAdapter)( const TCHAR *pszAdapterName ); 
+				PCASIM_OpenVirtualAdapter)( const WCHAR *pszAdapterName ); 
 
 typedef HANDLE ( WINAPI*
-				PCASIM_OpenLowerAdapter)(const TCHAR *pszAdapterName ); 
+				PCASIM_OpenLowerAdapter)(const WCHAR *pszAdapterName ); 
 
 typedef DWORD (WINAPI *
 			   PCASIM_GetAdapterVendorDescription)( 
 			   HANDLE hAdapterHandle, 
 			   int * pNdisStatus, 
-			   TCHAR *lpBuffer, 
+			   WCHAR *lpBuffer, 
 			   LPDWORD pBufferSize // Bytes at lpBuffer 
 			   ); 
 
@@ -96,15 +96,15 @@ class DrvCall
 			PUINT pBufferSize // On entry this must point to size of buffer. 
 			); 
 
-		static HANDLE OpenVirtualAdapter(const TCHAR *pszAdapterName ); 
+		static HANDLE OpenVirtualAdapter(const WCHAR *pszAdapterName ); 
 
 		static HANDLE 
-			  OpenLowerAdapter(const TCHAR *pszAdapterName ); 
+			  OpenLowerAdapter(const WCHAR *pszAdapterName ); 
 
 		static DWORD GetAdapterVendorDescription( 
 			HANDLE hAdapterHandle, 
 			int * pNdisStatus, 
-			TCHAR *lpBuffer, 
+			WCHAR *lpBuffer, 
 			LPDWORD pBufferSize // Bytes at lpBuffer 
 			); 
 		static UINT OpenIo();

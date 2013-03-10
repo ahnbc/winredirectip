@@ -4,7 +4,7 @@
 #include "strsafe.h"
 #include "string.h"
 #include "DrvCall.h"
-BindAdapter::BindAdapter(const char *vname,const char *name)
+BindAdapter::BindAdapter(const wchar_t *vname,const wchar_t *name)
 {
 	m_svAdapter=vname;
 	m_sAdapter=name;
@@ -15,10 +15,10 @@ BindAdapter::BindAdapter(const char *vname,const char *name)
 
 void BindAdapter::setMac(const USHORT *s)
 {
-	char c[13]={0};
+	wchar_t c[13]={0};
 	memcpy(m_Mac,s,6);
 	MactoStr(m_Mac,c);
-	m_sMac=string(c);
+	m_sMac=wstring(c);
 }
 BOOL BindAdapter::isSameMac(USHORT * s) const
 {
@@ -29,7 +29,7 @@ BOOL BindAdapter::isSameMac(USHORT * s) const
 
 }
 
-UINT BindAdapter::strMacConv(string s,USHORT *m) 
+UINT BindAdapter::strMacConv(wstring s,USHORT *m) 
 {
 	char c[3]={0};
 	int i=0;
@@ -43,14 +43,14 @@ UINT BindAdapter::strMacConv(string s,USHORT *m)
 	}
 	return 0;
 }
-UINT BindAdapter::MactoStr(USHORT * m ,char *s) 
+UINT BindAdapter::MactoStr(USHORT * m ,wchar_t *s) 
 {
 	uchar *mac=(uchar *)m;
 	int i=0;
 	for(i=0;i<6;i++)
 	{
-	//	StringCchPrintfA(s+2*i,3,"%2.2X",mac[i]);
-		StringCchPrintfA(s+2*i,3,"%2.2X",mac[i]);
+	//	wstringCchPrintfA(s+2*i,3,"%2.2X",mac[i]);
+		StringCchPrintfW(s+2*i,3,L"%2.2X",mac[i]);
 	}
 	s[12]=0;
 	return 0;

@@ -1,5 +1,6 @@
 #ifndef _H_MSXDEX
 #define _H_MSXDEX
+#define _CRT_SECURE_NO_WARNINGS
 #define WINVER 0x0502
 #define _WIN32_WINNT WINVER
 #include "windows.h"
@@ -40,10 +41,10 @@ typedef unsigned long u32;
 		#define  BLOCK 1
 		#define  READ 2
 		#define  REDIRECT 3
-		const char IOName[]="\\\\.\\PcaIpRedir";
+		const wchar_t IOName[]=L"\\\\.\\PcaIpRedir";
 		
  UINT  WINAPI Free(const byte);
- UINT WINAPI  redirIP(const char [],const char[],const char[],const UCHAR ,const USHORT );
+ UINT WINAPI  redirIP(const wchar_t [],const wchar_t[],const wchar_t[],const UCHAR ,const USHORT );
  void WINAPI DllInit();
 #ifdef __cplusplus
 }

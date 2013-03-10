@@ -10,7 +10,7 @@ BOOL BindList::initFlag=0;
 	int status;
 	UINT size;
 	WCHAR *rawbuff;
-	char *buff;
+	//wchar_t *buff;
 	HANDLE hAdp;
 	PIP_ADAPTER_INFO pAdapterInfo;
 	PIP_ADAPTER_INFO pAdapter = NULL;
@@ -69,9 +69,9 @@ BOOL BindList::initFlag=0;
 		free(rawbuff);
 		return NULL;
 	}
-	buff=(CHAR *)malloc(size/2+1);
-	WideCharToMultiByte(CP_ACP,0,rawbuff,size/2,buff,size/2+1,NULL,&status);
-	if(status!=0)
+	//buff=(WCHAR *)malloc(size);
+	//WideCharToMultiByte(CP_ACP,0,rawbuff,size/2,buff,size/2+1,NULL,&status);
+	/*if(status!=0)
 	{
 		//err 8 字符转码错误
 		//	printf("Char Error\n");
@@ -79,13 +79,13 @@ BOOL BindList::initFlag=0;
 		free(rawbuff);
 		s_err=8;
 		return NULL;
-	}
+	}*/
 	for(i=0;i<size/2-1;i++)
 	{
-		j=(DWORD)strlen(buff+i);
-		s_self.m_Adapters.push_back(BindAdapter(buff+i,buff+i+j+1));
+		j=(DWORD)wcslen(rawbuff+i);
+		s_self.m_Adapters.push_back(BindAdapter(rawbuff+i,rawbuff+i+j+1));
 		i+=j+1;
-		j=(DWORD)strlen(buff+i);
+		j=(DWORD)wcslen(rawbuff+i);
 		i+=j;
 	}
 
@@ -96,16 +96,17 @@ BOOL BindList::initFlag=0;
 		if(hAdp==INVALID_HANDLE_VALUE)
 					//err 15 ??
 				{
-					free(buff);
+					//free(buff);
 					free(rawbuff);
 					s_err=15;
 					return NULL;
 				}
 		status=0;
 		ret=20;
+		memset(rawbuff,0,size);
 		if(DrvCall::GetAdapterCurrentAddress(hAdp,&status,NULL,(PUCHAR)rawbuff,&ret))
 			{
-				free(buff);
+				//free(buff);
 				free(rawbuff);
 						//err 18
 				s_err=18;
@@ -113,7 +114,7 @@ BOOL BindList::initFlag=0;
 			};
 		if(status!=0)
 			{
-				free(buff);
+				//free(buff);
 				free(rawbuff);
 						//err 16 ??
 				s_err=16;
@@ -126,8 +127,8 @@ BOOL BindList::initFlag=0;
 			
 	}
 	//
-	free(buff);
-	free(rawbuff);
+	//free(buff);
+	
 
 	//开始获取IP信息
 	pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
@@ -135,6 +136,7 @@ BOOL BindList::initFlag=0;
 		//err 13 内存申请不足
 		//	printf("Error allocating memory needed to call GetAdaptersinfo\n");
 		s_err=13;
+		free(rawbuff);
 		return NULL;
 	}
 	// Make an initial call to GetAdaptersInfo to get
@@ -145,6 +147,7 @@ BOOL BindList::initFlag=0;
 		if (pAdapterInfo == NULL) {
 			//printf("Error allocating memory needed to call GetAdaptersinfo\n");
 			s_err=13;
+			free(rawbuff);
 			return NULL;
 		}
 	}
@@ -159,17 +162,23 @@ BOOL BindList::initFlag=0;
 			{
 				if(it->isSameMac(mac))
 				{
-					it->setIp(pAdapter->IpAddressList.IpAddress.String);
-					it->setDesc(pAdapter->Description);
+					memset(rawbuff,0,size);
+					mbstowcs(rawbuff,pAdapter->IpAddressList.IpAddress.String,size/2-1);
+					it->setIp(rawbuff);
+					memset(rawbuff,0,size);
+					mbstowcs(rawbuff,pAdapter->Description,size/2-1);
+					it->setDesc(rawbuff);
 					it->setType(pAdapter->Type);
 				}
 			}
 		}
 	} else {
 		s_err=19;
+		free(rawbuff);
 		return NULL;
 		//printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
 	}
+	free(rawbuff);
 	if (pAdapterInfo)
 		free(pAdapterInfo);
 	return &s_self;
@@ -179,21 +188,21 @@ uint BindList::GetError()
 {
 	return s_err;
 }
-const BindAdapter * BindList::getByMac(string mac) const
+const BindAdapter * BindList::getByMac(wstring mac) const
 {
 	vector<BindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameMac(mac))return &(*it);
 	return NULL;
 }
-const BindAdapter * BindList::getByIP(string ip)  const
+const BindAdapter * BindList::getByIP(wstring ip)  const
 {
 	vector<BindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameIP(ip))return &(*it);
 	return NULL;
 }
-const BindAdapter * BindList::getByName(string s)  const
+const BindAdapter * BindList::getByName(wstring s)  const
 {
 	vector<BindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
