@@ -562,8 +562,10 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
-	//MainWork(NULL);
+
+
    g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
+
    	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
 	{
 		//err 12 主线程启动失败
@@ -690,17 +692,15 @@ if(argc ==1){
 		return 0;
 	}
 	atexit(AtExit);
-	//printf("Running \n");
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
 		wprintf(L"Error Back:%d\n",ret);
 	}
-	{
-		    wprintf(L"Running \n");
+
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}
-	}
+	
 	wprintf(L"End\n");
 	system("pause");
 	return 0;
