@@ -64,6 +64,7 @@ static PKT_REDIR_FILTER_ENTRY g_Outent={0,MAXFF,0,MAXFF,REDIRECT,0};
 static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
 
 const byte IN_DIRECT=1,OUT_DIRECT=2;
+static vector<USHORT> noredirport;
 
 typedef struct
 {
@@ -150,7 +151,7 @@ BOOL IsWow64Current()
 
 
 	bIsWow64 = FALSE;  
-	fnIsWow64Process = GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsWow64Process");  
+	fnIsWow64Process = GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "IsWow64Process");  
 
 
 	if(fnIsWow64Process)  
@@ -237,7 +238,7 @@ void AtExit(void)
 	 if(ret==0)
 	 {
 		 EnterCriticalSection(&cs);
-		 printf("%sIOWriteCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?"In":"Out",GetLastError());
+		 wprintf(L"%lsIOWriteCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?L"In":L"Out",GetLastError());
 		 LeaveCriticalSection(&cs);
 	 }
 	 //IO Finish
@@ -278,10 +279,11 @@ void  IOReadCompletionRoutine(
 	LPOVERLAPPED lpOverlapped )
 {
 	ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
-		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len;
+		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len,check_port=0;
 	byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	UCHAR ip_len;
 	UINT ret;
+	vector<USHORT>::iterator it;
 	if(dwErrorCode!=0)return;
 	if(dwNumberOfBytesTransfered>=(14+20))
 	{
@@ -309,11 +311,21 @@ void  IOReadCompletionRoutine(
 		{
 			goto __write;
 		}
-		if(g_port!=0&&*(USHORT *)(buff+tcp_offset)!=ntohs(g_port))
+		if(byDirect==IN_DIRECT)
+			check_port=*(USHORT *)(buff+tcp_offset);
+		else
+			check_port=*(USHORT *)(buff+tcp_offset+2);
+		check_port=ntohs(check_port);
+		if(g_port!=0&&check_port!=g_port)
 		{
 			goto __write;
 		}
-
+		for(it=noredirport.begin();it!=noredirport.end();it++)
+		{
+			if(check_port==*it)
+				goto __write;
+		}
+		
 
 		*(ushort *)(buff+ip_offset+10)=0;
 		if(byDirect==IN_DIRECT)
@@ -351,7 +363,7 @@ __write:
 	if(0==ret)
 	{
 		EnterCriticalSection(&cs);
-		printf("%sIOReadCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?"In":"Out",GetLastError());
+		wprintf(L"%lsIOReadCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?L"In":L"Out",GetLastError());
 		LeaveCriticalSection(&cs);
 	}
 }
@@ -397,7 +409,7 @@ __write:
 	 if(ret!=0)
 		 return 0xFF;
 	 EnterCriticalSection(&cs);
-	 printf("start %swork\n",byDirect==IN_DIRECT?"in":"out");
+	 wprintf(L"start %lswork\n",byDirect==IN_DIRECT?L"in":L"out");
 	 LeaveCriticalSection(&cs);
 	 for(i=0;i<0x40;i++)
 	 {
@@ -412,7 +424,7 @@ __write:
 		 if(ret==0)
 		 {
 			 EnterCriticalSection(&cs);
-			 printf("%swork  stop:%d\n",byDirect==IN_DIRECT?"in":"out",GetLastError());
+			 wprintf(L"%swork  stop:%d\n",byDirect==IN_DIRECT?L"in":L"out",GetLastError());
 			 LeaveCriticalSection(&cs);
 			 break;
 		 }
@@ -483,7 +495,23 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	WORD wVersionRequested;
 	WSADATA wsaData;
 	char * chrtmp;
+	wchar_t *env_noport;
+	wchar_t *pport;
+	//wstring noport_str;
 	if(IsWow64Current())return 40;
+	env_noport=(wchar_t *)malloc(2000);
+	memset(env_noport,0,2000);
+	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
+	noredirport.empty();
+	if(ret!=0)
+	{
+		pport=env_noport;
+		while(pport[0]>=L'0'&&pport[0]<=L'9')
+		{
+			noredirport.push_back((USHORT)wcstol(pport,&pport,10));
+			pport++;
+		}
+	}
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
 	g_port=wport;
@@ -638,7 +666,7 @@ int  wmain(int argc,wchar_t ** argv)
 	std::vector <BindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
 	if(IsWow64Current()){
-		printf("run in 64bit version..\n");
+		wprintf(L"run in 64bit version..\n");
 		system("pause");
 		return 0;};
 if(argc ==1){
@@ -696,7 +724,7 @@ if(argc ==1){
 	{
 		wprintf(L"Error Back:%d\n",ret);
 	}
-
+	wprintf(L"Running\n");
 		if(g_hMainThread){
 			WaitForSingleObject(g_hMainThread,INFINITE);
 		}

@@ -25,20 +25,20 @@ namespace mslogin
 	/// </summary>
 	public partial class MainForm : Form
 	{
-        [DllImport("winredirip.dll", EntryPoint = "DllInit", CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+        [DllImport("winredirip.dll", EntryPoint = "DllInit", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static  extern UInt32 DllInit();
-        [DllImport("winredirip.dll", EntryPoint = "redirIP",  CharSet =CharSet.Ansi, ExactSpelling=true,CallingConvention = CallingConvention.StdCall)]
+        [DllImport("winredirip.dll", EntryPoint = "redirIP",  CharSet =CharSet.Unicode, ExactSpelling=true,CallingConvention = CallingConvention.StdCall)]
 		private static  extern UInt32 redirIp(string devname,string orip, string redip , byte protocol ,
 		                      UInt16 port );
         [DllImport("winredirip.dll", EntryPoint = "Free", ExactSpelling = true,SetLastError=true, CallingConvention = CallingConvention.StdCall)]
 		private static extern UInt32 Free( byte closelib);
         [DllImport("kernel32.dll", EntryPoint = "GetLastError")]
         private static extern UInt32 GetLastError();
-		[DllImport("kernel32.dll",EntryPoint="GetPrivateProfileStringA")]
+        [DllImport("kernel32.dll", EntryPoint = "GetPrivateProfileStringW", CharSet = CharSet.Unicode)]
         private static extern int GetPrivateProfileString(string section, string key, 
                                                           string def, StringBuilder retVal, 
                                                           int size, string filePath);
-		[DllImport("kernel32.dll",EntryPoint="WritePrivateProfileStringA")]
+		[DllImport("kernel32.dll",EntryPoint="WritePrivateProfileStringW", CharSet = CharSet.Unicode)]
         private static extern long WritePrivateProfileString(string section, string key, 
                                                              string val, string filePath);
 
@@ -57,7 +57,9 @@ namespace mslogin
          string filepath="";
         Boolean Opened = false;
         Boolean Worked = false;
-        string lastip = "";
+       // bool IsConnectionSuccessful;
+        string[] laststatus = new string[2];
+        private static ManualResetEvent TimeoutObject = new ManualResetEvent(false);
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
 			{"Chinese","221.231.130.70"}
@@ -181,14 +183,39 @@ namespace mslogin
             }
 
         }*/
+        private void TimeOutCallBack(IAsyncResult asyncresult)
+        {
+            try { 
+            Socket sock = asyncresult as Socket;
+            sock.EndConnect(asyncresult);
+            }
+            catch
+            {
+
+            }
+            TimeoutObject.Set();
+        }
+
         string[] CheckServer(string testip,ushort testport)
         {
             byte[] buff=new byte[100];
             int tmp=0;
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             sock.ReceiveTimeout = sock.SendTimeout = 1000;
-            try { 
-            sock.Connect(testip,(int) testport);
+            try {
+           TimeoutObject.Reset();
+           sock.BeginConnect(testip, (int)testport, TimeOutCallBack, sock);
+           if (TimeoutObject.WaitOne(1000))
+           {
+               if (!sock.Connected)
+               {
+                   return null;
+               }
+           }
+           else
+           {
+               return null; 
+           }
            tmp= sock.Receive(buff, 100, SocketFlags.None);
             }
             catch
@@ -240,7 +267,7 @@ namespace mslogin
 				MessageBox.Show(ls.get("imsg/m2"));
 				return;
 			}
-            if(lastip!=ipBox.Text)
+            if (laststatus[0] != ipBox.Text && laststatus[1] != AdaptorcomboBox.Text)
             {          
            /* object[] data = new object[]
             {
@@ -294,7 +321,8 @@ namespace mslogin
                 Maple.StartInfo.FileName = filepath;
                 Maple.StartInfo.Arguments =locamap[localeBox.Text]+" "+portBox.Text;
                 Maple.Start();
-                lastip = ipBox.Text.Clone().ToString();
+                laststatus[0] = ipBox.Text.Clone().ToString();
+                laststatus[1] = AdaptorcomboBox.Text.Clone().ToString();
 		/*	*/
 		}
 		
