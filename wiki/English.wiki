@@ -25,9 +25,10 @@
   or and add that directory into path variable
  * run binary file , you will see all support adapters
    copy the  LowDeviceName (such as \DEVICE\xxxxx)
-   if exists \DEVICE\NDISWANIP use it
+   if exists \DEVICE\NDISWANIP and you use WAN(pppoe) use it
  * run binary file with three(or five) parameters,
     such as xx.exe [-p protocol] [-o port] \DEVICE\yyyy ip_you_want_to_be_redirected ip_you_want_to_redirect_to
 
     default port=0 All port protocol=0 BOTH
     the newest version support domain name
+ * Remember Loopback adapter never support by ndis
