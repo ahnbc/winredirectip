@@ -49,6 +49,7 @@ namespace mslogin
             this.SetPath = new System.Windows.Forms.Button();
             this.Check = new System.Windows.Forms.Button();
             this.portBox = new System.Windows.Forms.TextBox();
+            this.Stop = new System.Windows.Forms.Button();
             this.statusStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -142,9 +143,9 @@ namespace mslogin
             // 
             // Check
             // 
-            this.Check.Location = new System.Drawing.Point(76, 207);
+            this.Check.Location = new System.Drawing.Point(26, 207);
             this.Check.Name = "Check";
-            this.Check.Size = new System.Drawing.Size(106, 34);
+            this.Check.Size = new System.Drawing.Size(94, 34);
             this.Check.TabIndex = 9;
             this.Check.Text = "Check";
             this.Check.UseVisualStyleBackColor = true;
@@ -157,11 +158,22 @@ namespace mslogin
             this.portBox.Size = new System.Drawing.Size(80, 21);
             this.portBox.TabIndex = 10;
             // 
+            // Stop
+            // 
+            this.Stop.Location = new System.Drawing.Point(138, 207);
+            this.Stop.Name = "Stop";
+            this.Stop.Size = new System.Drawing.Size(95, 34);
+            this.Stop.TabIndex = 11;
+            this.Stop.Text = "Stop Redirect";
+            this.Stop.UseVisualStyleBackColor = true;
+            this.Stop.Click += new System.EventHandler(this.Stop_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(257, 276);
+            this.Controls.Add(this.Stop);
             this.Controls.Add(this.portBox);
             this.Controls.Add(this.Check);
             this.Controls.Add(this.SetPath);
@@ -201,5 +213,6 @@ namespace mslogin
         private System.Windows.Forms.Button SetPath;
         private System.Windows.Forms.Button Check;
         private System.Windows.Forms.TextBox portBox;
+        private System.Windows.Forms.Button Stop;
 	}
 }

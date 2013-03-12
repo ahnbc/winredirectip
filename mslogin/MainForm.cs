@@ -84,6 +84,7 @@ namespace mslogin
 			UI3.Text=ls.get("UI3");
             SetPath.Text = ls.get("UI4");
             Check.Text = ls.get("UI5");
+            Stop.Text = ls.get("UI6");
 			Commit.Text=ls.get("Commit");
 			StatusLabel.Text=ls.get("StatusLabel_1");
 			}
@@ -256,12 +257,7 @@ namespace mslogin
                 MessageBox.Show(ls.get("imsg/m5"));
                 return;
             }
-            string[] result = CheckServer(ipBox.Text, ipport);
-            if (result == null)
-            {
-                MessageBox.Show(ls.get("imsg/m6"));
-                return;
-            }
+            
 			if(!locamap.ContainsKey(localeBox.Text))
 			{
 				MessageBox.Show(ls.get("imsg/m2"));
@@ -296,7 +292,12 @@ namespace mslogin
                         
                         }*/
             }
-            
+            string[] result = CheckServer(ipBox.Text, ipport);
+            if (result == null)
+            {
+                MessageBox.Show(ls.get("imsg/m6"));
+                return;
+            }
            // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
            // 
        
@@ -368,6 +369,11 @@ namespace mslogin
                 MessageBox.Show(ls.get("imsg/m5"));
                 return;
             }
+            if (Worked&&laststatus[0] == ipBox.Text)
+            {
+                MessageBox.Show(ls.get("imsg/m8"));
+                return;
+            }
             string[] result = CheckServer(ipBox.Text, ipport);
             if (result == null)
             {
@@ -375,6 +381,25 @@ namespace mslogin
                 return;
             }
             MessageBox.Show(string.Format(ls.get("imsg/m7"), result[0], result[1], result[2]));
+        }
+
+        private void Stop_Click(object sender, EventArgs e)
+        {
+            if (!Worked)
+            {
+                MessageBox.Show(ls.get("imsg/m9"));
+                return;
+            }
+            UInt32 ret = Free(0);
+            if (ret == 0)
+            {
+                MessageBox.Show(ls.get("imsg/m10"));
+                Worked = false;
+            }
+            else
+            {
+                MessageBox.Show(ls.get("imsg/m11"));
+            }
         }
 	}
 }
