@@ -32,3 +32,6 @@
     default port=0 All port protocol=0 BOTH
     the newest version support domain name
  * Remember Loopback adapter never support by ndis
+
+= Additional =
+ * In newest version , "noport" environment  parameters can make special ports (separate by ,) not redirect
