@@ -25,13 +25,17 @@ namespace mslogin
 	/// </summary>
 	public partial class MainForm : Form
 	{
+        //dll init function
         [DllImport("winredirip.dll", EntryPoint = "DllInit", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static  extern UInt32 DllInit();
+        // dll main function
         [DllImport("winredirip.dll", EntryPoint = "redirIP",  CharSet =CharSet.Unicode, ExactSpelling=true,CallingConvention = CallingConvention.StdCall)]
 		private static  extern UInt32 redirIp(string devname,string orip, string redip , byte protocol ,
 		                      UInt16 port );
+        // free dll resource
         [DllImport("winredirip.dll", EntryPoint = "Free", ExactSpelling = true,SetLastError=true, CallingConvention = CallingConvention.StdCall)]
 		private static extern UInt32 Free( byte closelib);
+        // win api
         [DllImport("kernel32.dll", EntryPoint = "GetLastError")]
         private static extern UInt32 GetLastError();
         [DllImport("kernel32.dll", EntryPoint = "GetPrivateProfileStringW", CharSet = CharSet.Unicode)]
@@ -42,24 +46,20 @@ namespace mslogin
         private static extern long WritePrivateProfileString(string section, string key, 
                                                              string val, string filePath);
 
-    //    private delegate UInt32 BeginCall();
-        private delegate void pStatusLabSet(string i);
 
-        pStatusLabSet StatusLableSet;
-    //    EndCall pEndCall;
-    //    
-
-      //  Thread mainthread;
-     //   static  UInt32 mainworkret;
-
-
+        // i18 language file reader
 		 LangString ls;
+        // ms main file path
          string filepath="";
+        // if main form opened? if lang file no load it will be false
         Boolean Opened = false;
+        // if redirecting work?
         Boolean Worked = false;
-       // bool IsConnectionSuccessful;
+        // last status for ip and netinterface
         string[] laststatus = new string[2];
+        // for connect 
         private static ManualResetEvent TimeoutObject = new ManualResetEvent(false);
+        // locale dic
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
 			{"Chinese","221.231.130.70"}
@@ -70,12 +70,15 @@ namespace mslogin
 			// The InitializeComponent() call is required for Windows Forms designer support.
 			//
 			InitializeComponent();
+            // try get i18 file 
 			try{
+                // if en??
 				ls=new LangString("zh");}
 			catch
 			{
 					MessageBox.Show("Lang File not exist or open error.");
 			}
+            // init ui
 			if(ls!=null)
 			{
 			Text=ls.get("title");
@@ -88,27 +91,31 @@ namespace mslogin
 			Commit.Text=ls.get("Commit");
 			StatusLabel.Text=ls.get("StatusLabel_1");
 			}
+            localeBox.Items.Clear();
+            // init localebox
+            foreach (KeyValuePair<String,String> kvp in locamap)
+            {
+                localeBox.Items.Add(kvp.Key);
+            }
 			localeBox.SelectedIndex=0;
-          //  pBeginCall = dBeginCall;
-          //  pEndCall = dEndCall;
+            
 			
 		}
-        void StatusLabSet(string i)
-        {
-            StatusLabel.Text = i;
-        }
 		void MainFormLoad(object sender, EventArgs e)
 		{	
 		if(ls==null)Close();
         try
         {
+            // try to init dll
             DllInit();
         }
         catch 
-        {
+        { 
+            // close if cannot
             MessageBox.Show(ls.get("msg/m1"));
             Close();
         }
+            // read conf file
 		StringBuilder sb=new StringBuilder(100);
 		GetPrivateProfileString("conf","ip","",sb,100,"./conf.ini");
 		string ip=sb.ToString();
@@ -121,6 +128,7 @@ namespace mslogin
         GetPrivateProfileString("conf", "port", "8484", sb, 100, "./conf.ini");
         portBox.Text = sb.ToString();
 		int select=0;
+            // read adapters
 		ManagementClass   mc   =   new   ManagementClass( "Win32_NetworkAdapterConfiguration"); 
 		ManagementObjectCollection   moc   =   mc.GetInstances(); 
 		foreach(ManagementObject   mo   in   moc)   {
@@ -137,30 +145,10 @@ namespace mslogin
 			if(((string)AdaptorcomboBox.Items[i]).Equals(dev))select=i;
 		AdaptorcomboBox.SelectedIndex=select;
 		ipBox.Text=ip;
-        StatusLableSet=StatusLabSet;
+       // opened
         Opened = true;
 		}
 		
-	/*	UInt32 dBeginCall()
-        {
-            //return 1;
-            uint r;
-            StringBuilder sb = new StringBuilder(500);
-            sb.Append(AdaptorcomboBox.Text);
-            string cDev = sb.ToString();
-            sb.Remove(0, sb.Length);
-            sb.Append(locamap[localeBox.Text]);
-            string corIp = sb.ToString();
-            sb.Remove(0, sb.Length);
-            sb.Append(ipBox.Text);
-            string creip = sb.ToString();
-            r=redirIp(cDev, corIp, creip, (byte)1, (UInt16)0);
-            return r;
-        }
-        UInt32 dEndCall(int i)
-        {
-            return Free((byte)i);
-        }*/
 		void StatusStripItemClicked(object sender, ToolStripItemClickedEventArgs e)
 		{
 			
@@ -170,20 +158,7 @@ namespace mslogin
 		{
 
 		}
-      /*  void  MainWork(object para)
-        {
-            object[] data = (object [])para;
-            Worked = true;
-            UInt32 ret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
-            if (ret != 0)
-            {
-                Worked = false;
-                MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                 this.Invoke(StatusLableSet,new object []{ls.get("StatusLabel_3")});
-                return;
-            }
-
-        }*/
+        // beginconnect  callback
         private void TimeOutCallBack(IAsyncResult asyncresult)
         {
             try { 
@@ -196,7 +171,7 @@ namespace mslogin
             }
             TimeoutObject.Set();
         }
-
+        // check server status return null if fail string[] = ver , path , locale no
         string[] CheckServer(string testip,ushort testport)
         {
             byte[] buff=new byte[100];
@@ -227,10 +202,13 @@ namespace mslogin
 
             if (tmp < 10) return null;
             string[] ret = new string[3];
+            // read ver
             tmp = buff[2];
             tmp += (int)buff[3] << 8;
             ret[0] = tmp.ToString();
+            // read path
             ret[1] = (buff[6] - 0x30).ToString();
+            // read locale
             ret[2] = buff[15].ToString();
             sock.Close();
             return ret;
@@ -242,37 +220,36 @@ namespace mslogin
             UInt32 ret = 0;
             ushort ipport;
             StatusLabel.Text = ls.get("StatusLabel_1");
+            // check ms mainfile exist
             if (!File.Exists(filepath))
             {
                 MessageBox.Show(ls.get("imsg/m4"));
                 return;
             }
+            // ipbox empty
 			if(ipBox.Text=="")
 			{
 				MessageBox.Show(ls.get("imsg/m1"));
 				return;
 			}
+            // port right
             if (!ushort.TryParse(portBox.Text,out ipport))
             {
                 MessageBox.Show(ls.get("imsg/m5"));
                 return;
             }
-            
+            // locamap right
 			if(!locamap.ContainsKey(localeBox.Text))
 			{
 				MessageBox.Show(ls.get("imsg/m2"));
 				return;
 			}
-            if (laststatus[0] != ipBox.Text && laststatus[1] != AdaptorcomboBox.Text)
-            {          
-           /* object[] data = new object[]
-            {
-                AdaptorcomboBox.Text.Clone(),
-                locamap[localeBox.Text].Clone(),
-                ipBox.Text.Clone()
-            };*/
+            // if  change  ??
+            if (laststatus[0] != ipBox.Text || laststatus[1] != AdaptorcomboBox.Text)
+            {   
+                // if work free
             if (Worked)
-            {
+             {
                 ret=Free(0);
                 if (ret > 0)
                 {
@@ -281,47 +258,38 @@ namespace mslogin
                     return;
                 }
                 Worked = false;
-              /*  if (mainthread.IsAlive)
-                    try
-                    {
-                            mainthread.Abort();
-                    }
-                    
-                     catch
-                    {
-                        
-                        }*/
-            }
+             }
+                // check 
             string[] result = CheckServer(ipBox.Text, ipport);
             if (result == null)
-            {
+                {
                 MessageBox.Show(ls.get("imsg/m6"));
                 return;
+                }
+
+            }//end if change
+            // if not worked redirect
+            if (!Worked)
+            {
+                ret = redirIp(AdaptorcomboBox.Text, locamap[localeBox.Text], ipBox.Text, (byte)1, (UInt16)0);
+
+                if (ret != 0)
+                {
+                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                    StatusLabel.Text = ls.get("StatusLabel_3");
+                    return;
+                }
             }
-           // mainworkret = redirIp((string)data[0], (string)data[1], (string)data[2], (byte)1, (UInt16)0);
-           // 
-       
-          //  mainthread = new Thread(MainWork);
-          //  mainthread.Start(data);
-          //  
-
-            ret = redirIp(AdaptorcomboBox.Text, locamap[localeBox.Text], ipBox.Text, (byte)1, (UInt16)0);
-
-             if (ret != 0)
-             {
-                 MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                 StatusLabel.Text = ls.get("StatusLabel_3");
-                 return;
-             }
-
-            } 
+            //finsh
              StatusLabel.Text = ls.get("StatusLabel_2")+ipBox.Text;
             
              Worked = true;
+            //start game
              Process Maple = new Process();
                 Maple.StartInfo.FileName = filepath;
                 Maple.StartInfo.Arguments =locamap[localeBox.Text]+" "+portBox.Text;
                 Maple.Start();
+            // set last status
                 laststatus[0] = ipBox.Text.Clone().ToString();
                 laststatus[1] = AdaptorcomboBox.Text.Clone().ToString();
 		/*	*/
@@ -329,6 +297,7 @@ namespace mslogin
 		
 		void MainFormFormClosed(object sender, FormClosedEventArgs e)
 		{
+            // if opend wirte conf
             if (Opened)
             {
                 WritePrivateProfileString("conf", "ip", ipBox.Text, "./conf.ini");
@@ -339,12 +308,12 @@ namespace mslogin
             }
            
 		}
-
+         
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
              if (Opened)Free(1);
         }
-
+        // set path
         private void SetPath_Click(object sender, EventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog();
@@ -369,6 +338,7 @@ namespace mslogin
                 MessageBox.Show(ls.get("imsg/m5"));
                 return;
             }
+            // worked and check last ip will fail
             if (Worked&&laststatus[0] == ipBox.Text)
             {
                 MessageBox.Show(ls.get("imsg/m8"));
@@ -380,6 +350,7 @@ namespace mslogin
                 MessageBox.Show(ls.get("imsg/m6"));
                 return;
             }
+            // show msg
             MessageBox.Show(string.Format(ls.get("imsg/m7"), result[0], result[1], result[2]));
         }
 
