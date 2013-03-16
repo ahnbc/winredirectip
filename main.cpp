@@ -12,7 +12,7 @@
 #include "vector"
 #include "getopt.h"
 #include "wchar.h"
-
+#include "signal.h"
 
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -31,6 +31,8 @@ const BindAdapter *g_cpAdp=NULL;
 static HANDLE g_hInThread=NULL;
 static HANDLE g_hOutThread=NULL;
 static HANDLE g_hMainThread=NULL;
+static BYTE   g_ulMACAddr[8]={0};
+static BOOL   g_bMacLocal=false;
 //unsigned  InID,OutID,MainID;
 //static byte Inbuff[0x1000];
 //static byte Outbuff[0x1000];
@@ -165,6 +167,10 @@ void AtExit(void)
 {
 	Free(1);
 }
+void signalExit(int)
+{
+	Free(1);
+}
  UINT  WINAPI Free(const byte freelib)
 {
 	DWORD code;
@@ -287,7 +293,11 @@ void  IOReadCompletionRoutine(
 	if(dwErrorCode!=0)return;
 	if(dwNumberOfBytesTransfered>=(14+20))
 	{
-
+	//	EnterCriticalSection(&cs);
+	//	printf("Read One Packet...\n");
+	//	LeaveCriticalSection(&cs);
+	//	
+		
 		proto_3=*(USHORT * )(buff+12);
 		if(proto_3==IP_PRO)
 			ip_offset=LEN_ENT;
@@ -335,7 +345,17 @@ void  IOReadCompletionRoutine(
 
 		sum=ip_checksum((ushort *)(buff+ip_offset),ip_len);
 		*(ushort *)(buff+ip_offset+10)=sum;
+	//	EnterCriticalSection(&cs);
+	//	printf("Packet IP Redirect...\n");
+	//	LeaveCriticalSection(&cs);
+	//	
+			if(g_bMacLocal)
+			{
 
+			
+		ret=(byDirect==IN_DIRECT?6:0);
+		memmove(buff+ret,g_ulMACAddr,6);
+			}
 		if(proto_4==TCP_PRO)
 		{
 
@@ -484,6 +504,7 @@ static unsigned __stdcall MainWork(void * pList)
 	return 0;
 }
 
+
 UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wchar_t cpreIP[],const UCHAR proto,const USHORT wport)
 {
 	
@@ -574,6 +595,15 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 		return 31;
 	}
 	g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
+	ret=6;
+	if(NO_ERROR==SendARP(g_dwrediIP,INADDR_ANY,g_ulMACAddr,(PULONG)&ret))
+	{
+		g_bMacLocal=true;
+	}
+	else
+	{
+		g_bMacLocal=false;
+	}
 	free(chrtmp);
 	WSACleanup();
 	if(g_dworgIP==MAXFF||g_dwrediIP==MAXFF)
@@ -622,7 +652,10 @@ void WINAPI DllInit()
 	g_Outent.m_IPSrcAddressRangeEnd=g_Outent.m_IPDstAddressRangeEnd=
 		g_Inent.m_IPSrcAddressRangeEnd=g_Inent.m_IPDstAddressRangeEnd=MAXFF;
 		g_Outent.m_nFilterAction=g_Inent.m_nFilterAction=REDIRECT;
+	
 
+	g_bMacLocal=false;
+	memset(g_ulMACAddr,0,8);
 	DrvCall::initFlag=0;
 	BindList::initFlag=0;
 }
@@ -719,6 +752,9 @@ if(argc ==1){
 		system("pause");
 		return 0;
 	}
+	 signal(SIGINT,signalExit);
+	 signal(SIGABRT,signalExit);
+	 signal(SIGTERM,signalExit);
 	atexit(AtExit);
 	if(ret=redirIP(argv[optind],argv[optind+1],argv[optind+2],mPro,mPort))
 	{
