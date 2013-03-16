@@ -293,10 +293,10 @@ void  IOReadCompletionRoutine(
 	if(dwErrorCode!=0)return;
 	if(dwNumberOfBytesTransfered>=(14+20))
 	{
-	//	EnterCriticalSection(&cs);
-	//	printf("Read One Packet...\n");
-	//	LeaveCriticalSection(&cs);
-	//	
+		EnterCriticalSection(&cs);
+		printf("Read One Packet...\n");
+    	LeaveCriticalSection(&cs);
+	
 		
 		proto_3=*(USHORT * )(buff+12);
 		if(proto_3==IP_PRO)
@@ -336,6 +336,10 @@ void  IOReadCompletionRoutine(
 				goto __write;
 		}
 		
+		EnterCriticalSection(&cs);
+		printf("From :%d.%d.%d.%d ",buff[ip_offset+15],buff[ip_offset+14],buff[ip_offset+13],buff[ip_offset+12]);
+		printf("To :%d.%d.%d.%d \n",buff[ip_offset+19],buff[ip_offset+18],buff[ip_offset+17],buff[ip_offset+16]);
+		LeaveCriticalSection(&cs);
 
 		*(ushort *)(buff+ip_offset+10)=0;
 		if(byDirect==IN_DIRECT)
@@ -345,10 +349,10 @@ void  IOReadCompletionRoutine(
 
 		sum=ip_checksum((ushort *)(buff+ip_offset),ip_len);
 		*(ushort *)(buff+ip_offset+10)=sum;
-	//	EnterCriticalSection(&cs);
-	//	printf("Packet IP Redirect...\n");
-	//	LeaveCriticalSection(&cs);
-	//	
+		EnterCriticalSection(&cs);
+		printf("Packet IP Redirect...\n");
+		LeaveCriticalSection(&cs);
+		
 			if(g_bMacLocal)
 			{
 
@@ -596,9 +600,9 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	}
 	g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
 	ret=6;
-	if(NO_ERROR==SendARP(g_dwrediIP,INADDR_ANY,g_ulMACAddr,(PULONG)&ret))
+	if(NO_ERROR==SendARP(g_dwrediIP,INADDR_ANY,(PULONG)g_ulMACAddr,(PULONG)&ret)&&ret==6)
 	{
-		g_bMacLocal=true;
+		g_bMacLocal=false;
 	}
 	else
 	{
