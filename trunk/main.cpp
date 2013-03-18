@@ -67,7 +67,8 @@ static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
 
 const byte IN_DIRECT=1,OUT_DIRECT=2;
 static vector<USHORT> noredirport;
-
+static vector<USHORT> reg_noredirport;
+static MyCallBack g_InCallBack,g_OutCallBack;
 typedef struct
 {
 	unsigned long saddr; //‘¥IPµÿ÷∑      
@@ -103,9 +104,9 @@ return (USHORT)(~cksum);
 }
 
 
-u16 tcp_sum_calc(u16 len_tcp, u16 src_addr[],u16 dest_addr[],  u16 buff[])
+u16 tcpudp_sum_calc(byte protocal,u16 len_tcp, u16 src_addr[],u16 dest_addr[],  u16 buff[])
 {
-u16 prot_tcp=0x0600;
+u16 prot_tcp=((u16)protocal)<<8;
 u32 sum=0;	
 u16 i=len_tcp;	
 	// Find out if the length of data is even or odd number. If odd,
@@ -285,7 +286,7 @@ void  IOReadCompletionRoutine(
 	LPOVERLAPPED lpOverlapped )
 {
 	ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
-		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len,check_port=0;
+		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len,check_port=0,tcpudp_header_len=0;
 	byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	UCHAR ip_len;
 	UINT ret;
@@ -360,23 +361,43 @@ void  IOReadCompletionRoutine(
 		ret=(byDirect==IN_DIRECT?6:0);
 		memmove(buff+ret,g_ulMACAddr,6);
 			}
-		if(proto_4==TCP_PRO)
+		if(proto_4==TCP_PRO||proto_4==UDP_PRO)
 		{
+			
 
 			ip_all_len=htons(*((ushort *)(buff+ip_offset+2)));
 			tcp_all_len=ip_all_len-ip_len;
 			//
+			if(proto_4==TCP_PRO)
+			tcpudp_header_len=((*(buff+tcp_offset+12))&0xf0)>>2;
+			else
+			tcpudp_header_len=8;
 
-
+			if(byDirect==IN_DIRECT&&g_InCallBack)
+				g_InCallBack(buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
+			if(byDirect==OUT_DIRECT&&g_OutCallBack)
+				g_OutCallBack(buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
+			if(proto_4==TCP_PRO)
+			{
 			*(ushort *)(buff+tcp_offset+16)=0;
 			//cal len ip header all length - ip header length
 
-			sum=tcp_sum_calc(tcp_all_len,(USHORT *)(buff+ip_offset+12),
+			sum=tcpudp_sum_calc(proto_4,tcp_all_len,(USHORT *)(buff+ip_offset+12),
 				(USHORT *)(buff+ip_offset+16),(USHORT *)(buff+tcp_offset));
 
 			*(ushort *)(buff+tcp_offset+16)=sum;
-		}
+			}
+			else
+			{
+				*(ushort *)(buff+tcp_offset+6)=0;
+				//cal len ip header all length - ip header length
 
+				sum=tcpudp_sum_calc(proto_4,tcp_all_len,(USHORT *)(buff+ip_offset+12),
+					(USHORT *)(buff+ip_offset+16),(USHORT *)(buff+tcp_offset));
+
+				*(ushort *)(buff+tcp_offset+6)=sum;
+			}
+		}
 	}
 
 __write:
@@ -527,7 +548,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	env_noport=(wchar_t *)malloc(2000);
 	memset(env_noport,0,2000);
 	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
-	noredirport.empty();
+	noredirport=reg_noredirport;
 	if(ret!=0)
 	{
 		pport=env_noport;
@@ -536,6 +557,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 			noredirport.push_back((USHORT)wcstol(pport,&pport,10));
 			pport++;
 		}
+		
 	}
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
@@ -657,7 +679,8 @@ void WINAPI DllInit()
 		g_Inent.m_IPSrcAddressRangeEnd=g_Inent.m_IPDstAddressRangeEnd=MAXFF;
 		g_Outent.m_nFilterAction=g_Inent.m_nFilterAction=REDIRECT;
 	
-
+    g_InCallBack=NULL;
+	g_OutCallBack=NULL;
 	g_bMacLocal=false;
 	memset(g_ulMACAddr,0,8);
 	DrvCall::initFlag=0;
@@ -772,4 +795,23 @@ if(argc ==1){
 	wprintf(L"End\n");
 	system("pause");
 	return 0;
+}
+
+void WINAPI RegisterNoPort(const USHORT * pPort,DWORD dSize)
+{
+	DWORD i;
+	reg_noredirport.clear();
+	if(pPort==NULL||dSize==0)return;
+	for(i=0;i<dSize;i++)
+	{
+		reg_noredirport.push_back(pPort[i]);
+	}
+}
+void WINAPI RegisterInCallBack(const MyCallBack m)
+{
+	g_InCallBack=m;
+}
+void WINAPI RegisterOutCallBack(const MyCallBack m)
+{
+	g_OutCallBack=m;
 }

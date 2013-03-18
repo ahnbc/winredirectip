@@ -3,3 +3,6 @@ EXPORTS
 Free
 redirIP
 DllInit
+RegisterNoPort
+RegisterInCallBack
+RegisterOutCallBack
