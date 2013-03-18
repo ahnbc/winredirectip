@@ -42,10 +42,13 @@ typedef unsigned long u32;
 		#define  READ 2
 		#define  REDIRECT 3
 		const wchar_t IOName[]=L"\\\\.\\PcaIpRedir";
-		
+ typedef void (_stdcall *MyCallBack) (byte *,DWORD);		
  UINT  WINAPI Free(const byte);
  UINT WINAPI  redirIP(const wchar_t [],const wchar_t[],const wchar_t[],const UCHAR ,const USHORT );
  void WINAPI DllInit();
+ void WINAPI RegisterNoPort(const USHORT *,DWORD);
+ void WINAPI RegisterInCallBack(const MyCallBack);
+ void WINAPI RegisterOutCallBack(const MyCallBack);
 #ifdef __cplusplus
 }
 #endif
