@@ -35,6 +35,15 @@ namespace mslogin
         // free dll resource
         [DllImport("winredirip.dll", EntryPoint = "Free", ExactSpelling = true,SetLastError=true, CallingConvention = CallingConvention.StdCall)]
 		private static extern UInt32 Free( byte closelib);
+        // extened function need newest 
+        [DllImport("winredirip.dll", EntryPoint = "RegisterNoPort",  ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+        private static extern void RegisterNoPort(UInt16[] portlist,UInt32 size);
+        private delegate void MyCallBack(IntPtr data, UInt32 size);
+        [DllImport("winredirip.dll", EntryPoint = "RegisterInCallBack", ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+        private static extern void RegisterInCallBack(MyCallBack c);
+        [DllImport("winredirip.dll", EntryPoint = "RegisterOutCallBack", ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+        private static extern void RegisterOutCallBack(MyCallBack c);
+
         // win api
         [DllImport("kernel32.dll", EntryPoint = "GetLastError")]
         private static extern UInt32 GetLastError();
@@ -45,8 +54,8 @@ namespace mslogin
 		[DllImport("kernel32.dll",EntryPoint="WritePrivateProfileStringW", CharSet = CharSet.Unicode)]
         private static extern long WritePrivateProfileString(string section, string key, 
                                                              string val, string filePath);
-
-
+        //callback
+        private MyCallBack InC, OutC;
         // i18 language file reader
 		 LangString ls;
         // ms main file path
@@ -55,10 +64,14 @@ namespace mslogin
         Boolean Opened = false;
         // if redirecting work?
         Boolean Worked = false;
+        // if callRun
+        bool callRun = false;
         // last status for ip and netinterface
-        string[] laststatus = new string[2];
+        string[] laststatus = new string[4];
         // for connect 
         private static ManualResetEvent TimeoutObject = new ManualResetEvent(false);
+        //
+        byte fixPathch;
         // locale dic
 		Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
@@ -127,6 +140,8 @@ namespace mslogin
         filepath = sb.ToString();
         GetPrivateProfileString("conf", "port", "8484", sb, 100, "./conf.ini");
         portBox.Text = sb.ToString();
+        GetPrivateProfileString("conf", "noport", "",sb,100, "./conf.ini");
+        NoPortBox.Text = sb.ToString();
 		int select=0;
             // read adapters
 		ManagementClass   mc   =   new   ManagementClass( "Win32_NetworkAdapterConfiguration"); 
@@ -145,6 +160,7 @@ namespace mslogin
 			if(((string)AdaptorcomboBox.Items[i]).Equals(dev))select=i;
 		AdaptorcomboBox.SelectedIndex=select;
 		ipBox.Text=ip;
+        InC = new MyCallBack(InCallBack);
        // opened
         Opened = true;
 		}
@@ -213,85 +229,31 @@ namespace mslogin
             sock.Close();
             return ret;
         }
-
-
+        // incallback
+       unsafe void InCallBack(IntPtr data, UInt32 size)
+        {
+            if (size != 16) return;
+            byte* d = (byte *)data.ToPointer();
+            if (d[0] != 14) return;
+            d[6] = (byte)(fixPathch + 0x30);
+        }
+       unsafe void OutCallBack(IntPtr data, UInt32 size)
+       {
+           if (size != 5) return;
+           byte* d = (byte*)data.ToPointer();
+           if (d[0] != 14) return;
+           d[6] = (byte)(fixPathch + 0x30);
+       }
 		void CommitClick(object sender, EventArgs e)
 		{
-            UInt32 ret = 0;
-            ushort ipport;
-            StatusLabel.Text = ls.get("StatusLabel_1");
-            // check ms mainfile exist
-            if (!File.Exists(filepath))
-            {
-                MessageBox.Show(ls.get("imsg/m4"));
-                return;
-            }
-            // ipbox empty
-			if(ipBox.Text=="")
-			{
-				MessageBox.Show(ls.get("imsg/m1"));
-				return;
-			}
-            // port right
-            if (!ushort.TryParse(portBox.Text,out ipport))
-            {
-                MessageBox.Show(ls.get("imsg/m5"));
-                return;
-            }
-            // locamap right
-			if(!locamap.ContainsKey(localeBox.Text))
-			{
-				MessageBox.Show(ls.get("imsg/m2"));
-				return;
-			}
-            // if  change  ??
-            if (laststatus[0] != ipBox.Text || laststatus[1] != AdaptorcomboBox.Text)
-            {   
-                // if work free
-            if (Worked)
-             {
-                ret=Free(0);
-                if (ret > 0)
-                {
-                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                    StatusLabel.Text = ls.get("StatusLabel_3");
-                    return;
-                }
-                Worked = false;
-             }
-                // check 
-            string[] result = CheckServer(ipBox.Text, ipport);
-            if (result == null)
-                {
-                MessageBox.Show(ls.get("imsg/m6"));
-                return;
-                }
-
-            }//end if change
-            // if not worked redirect
-            if (!Worked)
-            {
-                ret = redirIp(AdaptorcomboBox.Text, locamap[localeBox.Text], ipBox.Text, (byte)1, (UInt16)0);
-
-                if (ret != 0)
-                {
-                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                    StatusLabel.Text = ls.get("StatusLabel_3");
-                    return;
-                }
-            }
-            //finsh
-             StatusLabel.Text = ls.get("StatusLabel_2")+ipBox.Text;
-            
-             Worked = true;
+            RedirectOnlyButton_Click(sender, e);
             //start game
+            if (!callRun) return;
              Process Maple = new Process();
                 Maple.StartInfo.FileName = filepath;
                 Maple.StartInfo.Arguments =locamap[localeBox.Text]+" "+portBox.Text;
                 Maple.Start();
-            // set last status
-                laststatus[0] = ipBox.Text.Clone().ToString();
-                laststatus[1] = AdaptorcomboBox.Text.Clone().ToString();
+          
 		/*	*/
 		}
 		
@@ -305,6 +267,7 @@ namespace mslogin
                 WritePrivateProfileString("conf", "dev", AdaptorcomboBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "path", filepath, "./conf.ini");
                 WritePrivateProfileString("conf", "port", portBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "noport", NoPortBox.Text, "./conf.ini");
             }
            
 		}
@@ -371,6 +334,110 @@ namespace mslogin
             {
                 MessageBox.Show(ls.get("imsg/m11"));
             }
+            StatusLabel.Text = ls.get("StatusLabel_1");
         }
+
+        private void RedirectOnlyButton_Click(object sender, EventArgs e)
+        {
+            UInt32 ret = 0;
+            ushort ipport;
+            StatusLabel.Text = ls.get("StatusLabel_1");
+            // check ms mainfile exist
+            callRun = false;
+            if (!File.Exists(filepath))
+            {
+                MessageBox.Show(ls.get("imsg/m4"));
+                return;
+            }
+            if (laststatus[3] != fixpatchbox.Text)
+            {
+
+            
+            if (byte.TryParse(fixpatchbox.Text, out fixPathch))
+                RegisterInCallBack(InC);
+            else
+                RegisterInCallBack(null);
+            }
+
+            // ipbox empty
+           if (ipBox.Text == "")
+                {
+                    MessageBox.Show(ls.get("imsg/m1"));
+                    return;
+                }
+            // port right
+            if (!ushort.TryParse(portBox.Text, out ipport))
+            {
+                MessageBox.Show(ls.get("imsg/m5"));
+                return;
+            }
+            // locamap right
+            if (!locamap.ContainsKey(localeBox.Text))
+            {
+                MessageBox.Show(ls.get("imsg/m2"));
+                return;
+            }
+            // if change noport
+            if (NoPortBox.Text!="" && laststatus[2] != NoPortBox.Text)
+            {
+                String[] portlist = NoPortBox.Text.Split(',');
+                UInt16[] plist =new UInt16[portlist.Length];
+                for(int i=0;i<portlist.Length; i++)
+                {
+                    UInt16 res;
+                    if (UInt16.TryParse(portlist[i], out res))
+                        plist[i] = res;
+                }
+                RegisterNoPort(plist,unchecked((UInt32)plist.Length));
+            }
+            // if  change  ??
+            if (laststatus[0] != ipBox.Text || laststatus[1] != AdaptorcomboBox.Text)
+            {
+                // if work free
+                if (Worked)
+                {
+                    ret = Free(0);
+                    if (ret > 0)
+                    {
+                        MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                        StatusLabel.Text = ls.get("StatusLabel_3");
+                        return;
+                    }
+                    Worked = false;
+                }
+                // check 
+                string[] result = CheckServer(ipBox.Text, ipport);
+                if (result == null)
+                {
+                    MessageBox.Show(ls.get("imsg/m6"));
+                    return;
+                }
+
+            }//end if change
+            // if not worked redirect
+            if (!Worked)
+            {
+                ret = redirIp(AdaptorcomboBox.Text, locamap[localeBox.Text], ipBox.Text, (byte)1, (UInt16)0);
+
+                if (ret != 0)
+                {
+                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
+                    StatusLabel.Text = ls.get("StatusLabel_3");
+                    return;
+                }
+            }
+            //finsh
+            StatusLabel.Text = ls.get("StatusLabel_2") + ipBox.Text;
+
+            Worked = true;
+            // set last status
+            laststatus[0] = ipBox.Text.Clone().ToString();
+            laststatus[1] = AdaptorcomboBox.Text.Clone().ToString();
+            laststatus[2] = NoPortBox.Text.Clone().ToString();
+            laststatus[3] = fixpatchbox.Text.Clone().ToString();
+            callRun = true;
+        }
+
+
 	}
 }

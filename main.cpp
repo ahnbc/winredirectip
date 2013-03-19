@@ -66,8 +66,8 @@ static PKT_REDIR_FILTER_ENTRY g_Outent={0,MAXFF,0,MAXFF,REDIRECT,0};
 static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
 
 const byte IN_DIRECT=1,OUT_DIRECT=2;
+//static vector<USHORT> noredirport;
 static vector<USHORT> noredirport;
-static vector<USHORT> reg_noredirport;
 static MyCallBack g_InCallBack,g_OutCallBack;
 typedef struct
 {
@@ -294,10 +294,11 @@ void  IOReadCompletionRoutine(
 	if(dwErrorCode!=0)return;
 	if(dwNumberOfBytesTransfered>=(14+20))
 	{
+#if defined(DEBUG) || defined(_DEBUG)
 		EnterCriticalSection(&cs);
 		printf("Read One Packet...\n");
     	LeaveCriticalSection(&cs);
-	
+#endif
 		
 		proto_3=*(USHORT * )(buff+12);
 		if(proto_3==IP_PRO)
@@ -336,12 +337,12 @@ void  IOReadCompletionRoutine(
 			if(check_port==*it)
 				goto __write;
 		}
-		
+	#if defined(DEBUG) || defined(_DEBUG)	
 		EnterCriticalSection(&cs);
 		printf("From :%d.%d.%d.%d ",buff[ip_offset+15],buff[ip_offset+14],buff[ip_offset+13],buff[ip_offset+12]);
 		printf("To :%d.%d.%d.%d \n",buff[ip_offset+19],buff[ip_offset+18],buff[ip_offset+17],buff[ip_offset+16]);
 		LeaveCriticalSection(&cs);
-
+	#endif
 		*(ushort *)(buff+ip_offset+10)=0;
 		if(byDirect==IN_DIRECT)
 		*((uint *)(buff+ip_offset+12))=g_dworgIP;
@@ -350,10 +351,11 @@ void  IOReadCompletionRoutine(
 
 		sum=ip_checksum((ushort *)(buff+ip_offset),ip_len);
 		*(ushort *)(buff+ip_offset+10)=sum;
+		#if defined(DEBUG) || defined(_DEBUG)
 		EnterCriticalSection(&cs);
 		printf("Packet IP Redirect...\n");
 		LeaveCriticalSection(&cs);
-		
+		#endif
 			if(g_bMacLocal)
 			{
 
@@ -374,9 +376,9 @@ void  IOReadCompletionRoutine(
 			tcpudp_header_len=8;
 
 			if(byDirect==IN_DIRECT&&g_InCallBack)
-				g_InCallBack(buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
+				g_InCallBack(proto_4,buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
 			if(byDirect==OUT_DIRECT&&g_OutCallBack)
-				g_OutCallBack(buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
+				g_OutCallBack(proto_4,buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
 			if(proto_4==TCP_PRO)
 			{
 			*(ushort *)(buff+tcp_offset+16)=0;
@@ -548,7 +550,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	env_noport=(wchar_t *)malloc(2000);
 	memset(env_noport,0,2000);
 	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
-	noredirport=reg_noredirport;
+	//noredirport=reg_noredirport;
 	if(ret!=0)
 	{
 		pport=env_noport;
@@ -638,6 +640,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	//	printf("IP error.\n");
 		return 11;
 	}
+
 	g_Inent.m_IPSrcAddressRangeEnd=ntohl(g_dwrediIP);
 	g_Inent.m_IPSrcAddressRangeStart=ntohl(g_dwrediIP);
 	
@@ -683,6 +686,7 @@ void WINAPI DllInit()
 	g_OutCallBack=NULL;
 	g_bMacLocal=false;
 	memset(g_ulMACAddr,0,8);
+	noredirport.clear();
 	DrvCall::initFlag=0;
 	BindList::initFlag=0;
 }
@@ -800,11 +804,12 @@ if(argc ==1){
 void WINAPI RegisterNoPort(const USHORT * pPort,DWORD dSize)
 {
 	DWORD i;
-	reg_noredirport.clear();
+	noredirport.clear();
 	if(pPort==NULL||dSize==0)return;
 	for(i=0;i<dSize;i++)
 	{
-		reg_noredirport.push_back(pPort[i]);
+		if(pPort[i]!=0)
+		noredirport.push_back(pPort[i]);
 	}
 }
 void WINAPI RegisterInCallBack(const MyCallBack m)
