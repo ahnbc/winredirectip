@@ -50,14 +50,23 @@ namespace mslogin
             this.Check = new System.Windows.Forms.Button();
             this.portBox = new System.Windows.Forms.TextBox();
             this.Stop = new System.Windows.Forms.Button();
+            this.Mainpanel = new System.Windows.Forms.Panel();
+            this.Expanel = new System.Windows.Forms.Panel();
+            this.RedirectOnlyButton = new System.Windows.Forms.Button();
+            this.fixpatchbox = new System.Windows.Forms.TextBox();
+            this.FixPatchlabel = new System.Windows.Forms.Label();
+            this.NoPortBox = new System.Windows.Forms.TextBox();
+            this.NoPortlabel = new System.Windows.Forms.Label();
             this.statusStrip.SuspendLayout();
+            this.Mainpanel.SuspendLayout();
+            this.Expanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // UI1
             // 
-            this.UI1.Location = new System.Drawing.Point(8, 11);
+            this.UI1.Location = new System.Drawing.Point(3, 3);
             this.UI1.Name = "UI1";
-            this.UI1.Size = new System.Drawing.Size(232, 23);
+            this.UI1.Size = new System.Drawing.Size(232, 20);
             this.UI1.TabIndex = 0;
             this.UI1.Text = "NetWork Interface:";
             // 
@@ -65,7 +74,7 @@ namespace mslogin
             // 
             this.AdaptorcomboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.AdaptorcomboBox.FormattingEnabled = true;
-            this.AdaptorcomboBox.Location = new System.Drawing.Point(54, 37);
+            this.AdaptorcomboBox.Location = new System.Drawing.Point(49, 26);
             this.AdaptorcomboBox.Name = "AdaptorcomboBox";
             this.AdaptorcomboBox.Size = new System.Drawing.Size(186, 20);
             this.AdaptorcomboBox.TabIndex = 1;
@@ -74,9 +83,9 @@ namespace mslogin
             // 
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabel});
-            this.statusStrip.Location = new System.Drawing.Point(5, 254);
+            this.statusStrip.Location = new System.Drawing.Point(5, 253);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(252, 22);
+            this.statusStrip.Size = new System.Drawing.Size(455, 22);
             this.statusStrip.SizingGrip = false;
             this.statusStrip.TabIndex = 2;
             this.statusStrip.Text = "statusStrip";
@@ -89,7 +98,7 @@ namespace mslogin
             // 
             // UI2
             // 
-            this.UI2.Location = new System.Drawing.Point(8, 65);
+            this.UI2.Location = new System.Drawing.Point(3, 54);
             this.UI2.Name = "UI2";
             this.UI2.Size = new System.Drawing.Size(232, 18);
             this.UI2.TabIndex = 3;
@@ -101,14 +110,14 @@ namespace mslogin
             this.localeBox.FormattingEnabled = true;
             this.localeBox.Items.AddRange(new object[] {
             "Chinese"});
-            this.localeBox.Location = new System.Drawing.Point(54, 84);
+            this.localeBox.Location = new System.Drawing.Point(49, 73);
             this.localeBox.Name = "localeBox";
             this.localeBox.Size = new System.Drawing.Size(186, 20);
             this.localeBox.TabIndex = 4;
             // 
             // UI3
             // 
-            this.UI3.Location = new System.Drawing.Point(11, 118);
+            this.UI3.Location = new System.Drawing.Point(6, 106);
             this.UI3.Name = "UI3";
             this.UI3.Size = new System.Drawing.Size(229, 23);
             this.UI3.TabIndex = 5;
@@ -116,14 +125,14 @@ namespace mslogin
             // 
             // ipBox
             // 
-            this.ipBox.Location = new System.Drawing.Point(13, 143);
+            this.ipBox.Location = new System.Drawing.Point(8, 132);
             this.ipBox.Name = "ipBox";
             this.ipBox.Size = new System.Drawing.Size(134, 21);
             this.ipBox.TabIndex = 6;
             // 
             // Commit
             // 
-            this.Commit.Location = new System.Drawing.Point(10, 170);
+            this.Commit.Location = new System.Drawing.Point(5, 159);
             this.Commit.Name = "Commit";
             this.Commit.Size = new System.Drawing.Size(122, 31);
             this.Commit.TabIndex = 7;
@@ -133,7 +142,7 @@ namespace mslogin
             // 
             // SetPath
             // 
-            this.SetPath.Location = new System.Drawing.Point(138, 170);
+            this.SetPath.Location = new System.Drawing.Point(133, 159);
             this.SetPath.Name = "SetPath";
             this.SetPath.Size = new System.Drawing.Size(102, 31);
             this.SetPath.TabIndex = 8;
@@ -143,7 +152,7 @@ namespace mslogin
             // 
             // Check
             // 
-            this.Check.Location = new System.Drawing.Point(26, 207);
+            this.Check.Location = new System.Drawing.Point(21, 196);
             this.Check.Name = "Check";
             this.Check.Size = new System.Drawing.Size(94, 34);
             this.Check.TabIndex = 9;
@@ -153,14 +162,14 @@ namespace mslogin
             // 
             // portBox
             // 
-            this.portBox.Location = new System.Drawing.Point(153, 143);
+            this.portBox.Location = new System.Drawing.Point(148, 132);
             this.portBox.Name = "portBox";
             this.portBox.Size = new System.Drawing.Size(80, 21);
             this.portBox.TabIndex = 10;
             // 
             // Stop
             // 
-            this.Stop.Location = new System.Drawing.Point(138, 207);
+            this.Stop.Location = new System.Drawing.Point(133, 196);
             this.Stop.Name = "Stop";
             this.Stop.Size = new System.Drawing.Size(95, 34);
             this.Stop.TabIndex = 11;
@@ -168,23 +177,86 @@ namespace mslogin
             this.Stop.UseVisualStyleBackColor = true;
             this.Stop.Click += new System.EventHandler(this.Stop_Click);
             // 
+            // Mainpanel
+            // 
+            this.Mainpanel.Controls.Add(this.UI1);
+            this.Mainpanel.Controls.Add(this.Stop);
+            this.Mainpanel.Controls.Add(this.AdaptorcomboBox);
+            this.Mainpanel.Controls.Add(this.portBox);
+            this.Mainpanel.Controls.Add(this.UI2);
+            this.Mainpanel.Controls.Add(this.Check);
+            this.Mainpanel.Controls.Add(this.localeBox);
+            this.Mainpanel.Controls.Add(this.SetPath);
+            this.Mainpanel.Controls.Add(this.UI3);
+            this.Mainpanel.Controls.Add(this.Commit);
+            this.Mainpanel.Controls.Add(this.ipBox);
+            this.Mainpanel.Location = new System.Drawing.Point(8, 3);
+            this.Mainpanel.Name = "Mainpanel";
+            this.Mainpanel.Size = new System.Drawing.Size(251, 238);
+            this.Mainpanel.TabIndex = 12;
+            // 
+            // Expanel
+            // 
+            this.Expanel.Controls.Add(this.RedirectOnlyButton);
+            this.Expanel.Controls.Add(this.fixpatchbox);
+            this.Expanel.Controls.Add(this.FixPatchlabel);
+            this.Expanel.Controls.Add(this.NoPortBox);
+            this.Expanel.Controls.Add(this.NoPortlabel);
+            this.Expanel.Location = new System.Drawing.Point(266, 4);
+            this.Expanel.Name = "Expanel";
+            this.Expanel.Size = new System.Drawing.Size(181, 237);
+            this.Expanel.TabIndex = 13;
+            // 
+            // RedirectOnlyButton
+            // 
+            this.RedirectOnlyButton.Location = new System.Drawing.Point(44, 121);
+            this.RedirectOnlyButton.Name = "RedirectOnlyButton";
+            this.RedirectOnlyButton.Size = new System.Drawing.Size(93, 31);
+            this.RedirectOnlyButton.TabIndex = 4;
+            this.RedirectOnlyButton.Text = "RedirectOnly";
+            this.RedirectOnlyButton.UseVisualStyleBackColor = true;
+            this.RedirectOnlyButton.Click += new System.EventHandler(this.RedirectOnlyButton_Click);
+            // 
+            // fixpatchbox
+            // 
+            this.fixpatchbox.Location = new System.Drawing.Point(22, 82);
+            this.fixpatchbox.Name = "fixpatchbox";
+            this.fixpatchbox.Size = new System.Drawing.Size(100, 21);
+            this.fixpatchbox.TabIndex = 3;
+            // 
+            // FixPatchlabel
+            // 
+            this.FixPatchlabel.AutoSize = true;
+            this.FixPatchlabel.Location = new System.Drawing.Point(22, 58);
+            this.FixPatchlabel.Name = "FixPatchlabel";
+            this.FixPatchlabel.Size = new System.Drawing.Size(59, 12);
+            this.FixPatchlabel.TabIndex = 2;
+            this.FixPatchlabel.Text = "FixPatch:";
+            // 
+            // NoPortBox
+            // 
+            this.NoPortBox.Location = new System.Drawing.Point(22, 25);
+            this.NoPortBox.Name = "NoPortBox";
+            this.NoPortBox.Size = new System.Drawing.Size(144, 21);
+            this.NoPortBox.TabIndex = 1;
+            // 
+            // NoPortlabel
+            // 
+            this.NoPortlabel.AutoSize = true;
+            this.NoPortlabel.Location = new System.Drawing.Point(20, 9);
+            this.NoPortlabel.Name = "NoPortlabel";
+            this.NoPortlabel.Size = new System.Drawing.Size(95, 12);
+            this.NoPortlabel.TabIndex = 0;
+            this.NoPortlabel.Text = "NoRedirectPort:";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(257, 276);
-            this.Controls.Add(this.Stop);
-            this.Controls.Add(this.portBox);
-            this.Controls.Add(this.Check);
-            this.Controls.Add(this.SetPath);
-            this.Controls.Add(this.Commit);
-            this.Controls.Add(this.ipBox);
-            this.Controls.Add(this.UI3);
-            this.Controls.Add(this.localeBox);
-            this.Controls.Add(this.UI2);
+            this.ClientSize = new System.Drawing.Size(460, 275);
+            this.Controls.Add(this.Expanel);
+            this.Controls.Add(this.Mainpanel);
             this.Controls.Add(this.statusStrip);
-            this.Controls.Add(this.AdaptorcomboBox);
-            this.Controls.Add(this.UI1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -197,6 +269,10 @@ namespace mslogin
             this.Layout += new System.Windows.Forms.LayoutEventHandler(this.MainFormLayout);
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
+            this.Mainpanel.ResumeLayout(false);
+            this.Mainpanel.PerformLayout();
+            this.Expanel.ResumeLayout(false);
+            this.Expanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -214,5 +290,12 @@ namespace mslogin
         private System.Windows.Forms.Button Check;
         private System.Windows.Forms.TextBox portBox;
         private System.Windows.Forms.Button Stop;
+        private System.Windows.Forms.Panel Mainpanel;
+        private System.Windows.Forms.Panel Expanel;
+        private System.Windows.Forms.Label NoPortlabel;
+        private System.Windows.Forms.TextBox NoPortBox;
+        private System.Windows.Forms.TextBox fixpatchbox;
+        private System.Windows.Forms.Label FixPatchlabel;
+        private System.Windows.Forms.Button RedirectOnlyButton;
 	}
 }
