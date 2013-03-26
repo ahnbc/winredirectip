@@ -32,9 +32,9 @@ public:
 	BOOL isSameMac(USHORT *) const;
 	BOOL isSameIP(wstring s) const{ return m_sIP==s;};
 
-	UINT OpenHandles();
-	UINT OpenInBound();
-	UINT OpenOutBound();
+	UINT OpenHandles() const;
+	UINT OpenInBound() const;
+	UINT OpenOutBound() const;
 
 	UINT ResetHook() const;
 	UINT ResetInHook() const;
@@ -46,9 +46,9 @@ public:
 		ULONG nPktRedirFilterListEntryCount ) const;
 
    
-	UINT CloseHandles() ;
-	UINT CloseInHandle() ;
-	UINT CloseOutHandle() ;
+	UINT CloseHandles() const;
+	UINT CloseInHandle() const;
+	UINT CloseOutHandle() const;
 
 
 	BOOL isOutHandleOpen() const {return m_hOutBound!=NULL;};
@@ -129,7 +129,7 @@ public:
 
 
 private:
-	HANDLE m_hInBound,m_hOutBound;
+	mutable HANDLE m_hInBound,m_hOutBound;
 	wstring  m_svAdapter;
 	wstring  m_sAdapter;
 	USHORT m_Mac[3];
