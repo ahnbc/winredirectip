@@ -56,7 +56,7 @@ UINT BindAdapter::MactoStr(USHORT * m ,wchar_t *s)
 	return 0;
 }
 
-UINT BindAdapter::CloseInHandle()
+UINT BindAdapter::CloseInHandle() const
 {
 	if(m_hInBound==NULL)return 0;
 	if(CloseHandle(m_hInBound))
@@ -70,7 +70,7 @@ UINT BindAdapter::CloseInHandle()
 	}
 }
 
-UINT BindAdapter::CloseOutHandle()
+UINT BindAdapter::CloseOutHandle() const
 {
 	if(m_hOutBound==NULL)return 0;
 	if(CloseHandle(m_hOutBound))
@@ -85,7 +85,7 @@ UINT BindAdapter::CloseOutHandle()
 }
 
 
-UINT BindAdapter::CloseHandles()
+UINT BindAdapter::CloseHandles() const
 {
 	UINT ret=0;
 	if((ret=CloseOutHandle())||(ret=CloseInHandle()))
@@ -93,7 +93,7 @@ UINT BindAdapter::CloseHandles()
 	return 0;
 }
 
-UINT BindAdapter::OpenHandles()
+UINT BindAdapter::OpenHandles() const
 {
 	UINT ret=0;
 	if((ret=OpenInBound())||(ret=OpenOutBound()))

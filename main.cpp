@@ -561,6 +561,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 		}
 		
 	}
+	free(env_noport);
 	InitializeCriticalSection(&cs);
 	g_protocol=proto;
 	g_port=wport;
