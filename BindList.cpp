@@ -1,31 +1,45 @@
 #include "BindList.h"
 #include "DrvCall.h"
 #include "string.h"
-BindList BindList::s_self=BindList();
-uint BindList::s_err=0;
-BOOL BindList::initFlag=0;
- BindList * BindList::getAllBindList()
+#include "AutoBuffer.h"
+// initialize static variable
+CBindList CBindList::s_self=CBindList();
+uint CBindList::s_err=0;
+BOOL CBindList::initFlag=0;
+/************************************************************************/
+/*** 
+* @function GetAllBindList
+* @ 
+*
+*/
+/************************************************************************/
+ const CBindList * CBindList::GetAllBindList()
 {
-	uint ret,i,j;
-	int status;
-	UINT size;
-	WCHAR *rawbuff;
+	// vc6 style declared when begin
+	uint ret,i,j; //i for loop ,ret for all errorcode return ,
+	int status; //for iodevice status
+	UINT size; 
+	CAutoBuffer<WCHAR> rawbuff; //buff
 	//wchar_t *buff;
-	HANDLE hAdp;
+	HANDLE hAdp; 
 	PIP_ADAPTER_INFO pAdapterInfo;
 	PIP_ADAPTER_INFO pAdapter = NULL;
 	DWORD dwRetVal = 0;
 	ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
 	USHORT mac[3];
-	if(initFlag==0)
+	vector<CBindAdapter>::iterator it;
+	//-----------------------------
+	if(initFlag==0) //for initialize
 	{
-		s_self=BindList();
+		s_self=CBindList();
 		s_err=0;
 		initFlag=1;
 	}
-	vector<BindAdapter>::iterator it;
+
+	
 
 	//--------------------------------------------
+	// check if adapters have initializeed
 	if(s_self.m_Adapters.size()>0)
 	{
 		s_err=0;
@@ -40,40 +54,38 @@ BOOL BindList::initFlag=0;
 	}
 	status=0;
 	size=0;
-	//¿ªÊ¼»ñÈ¡Á½¸öID
+	//å¼€å§‹è·å–ä¸¤ä¸ªID
 	if(DrvCall::EnumerateBindings(&status,NULL,&size)!=0)
 	{
-		//err 4 ÎŞ·¨²éÑ¯°ó¶¨½Ó¿Ú
+		//err 4 æ— æ³•æŸ¥è¯¢ç»‘å®šæ¥å£
 		s_err=4;
 		return NULL;
 	}
 	if(status!=0&&status!=(int)0xC0010016)
 	{
-		//err 5 ½á¹û×´Ì¬´íÎó
+		//err 5 ç»“æœçŠ¶æ€é”™è¯¯
 		s_err=5;
 		return NULL;
 	}
-	rawbuff=(WCHAR *)malloc(size);
-	
+	rawbuff.reset(size+1);
+	memset(rawbuff,0,2*(size+1));
 	if(DrvCall::EnumerateBindings(&status,rawbuff,&size)!=0)
 	{
-		//err 6 »ñÈ¡buff´íÎó
-		free(rawbuff);
+		//err 6 è·å–buffé”™è¯¯
 		s_err=6;
 		return NULL;
 	}
 	if(status!=0)
 	{
-		//err 7 ½á¹û×´Ì¬´íÎó
+		//err 7 ç»“æœçŠ¶æ€é”™è¯¯
 		s_err=7;
-		free(rawbuff);
 		return NULL;
 	}
 	//buff=(WCHAR *)malloc(size);
 	//WideCharToMultiByte(CP_ACP,0,rawbuff,size/2,buff,size/2+1,NULL,&status);
 	/*if(status!=0)
 	{
-		//err 8 ×Ö·û×ªÂë´íÎó
+		//err 8 å­—ç¬¦è½¬ç é”™è¯¯
 		//	printf("Char Error\n");
 			free(buff);
 		free(rawbuff);
@@ -83,13 +95,13 @@ BOOL BindList::initFlag=0;
 	for(i=0;i<size/2-1;i++)
 	{
 		j=(DWORD)wcslen(rawbuff+i);
-		s_self.m_Adapters.push_back(BindAdapter(rawbuff+i,rawbuff+i+j+1));
+		s_self.m_Adapters.push_back(CBindAdapter(rawbuff+i,(WCHAR *)rawbuff+i+j+1));
 		i+=j+1;
 		j=(DWORD)wcslen(rawbuff+i);
 		i+=j;
 	}
 
-	//»ñÈ¡macµØÖ·
+	//è·å–macåœ°å€
 	for(it=s_self.m_Adapters.begin();it!=s_self.m_Adapters.end();it++)
 	{
 		hAdp=DrvCall::OpenLowerAdapter(it->getName()->c_str());
@@ -97,7 +109,6 @@ BOOL BindList::initFlag=0;
 					//err 15 ??
 				{
 					//free(buff);
-					free(rawbuff);
 					s_err=15;
 					return NULL;
 				}
@@ -107,7 +118,6 @@ BOOL BindList::initFlag=0;
 		if(DrvCall::GetAdapterCurrentAddress(hAdp,&status,NULL,(PUCHAR)rawbuff,&ret))
 			{
 				//free(buff);
-				free(rawbuff);
 						//err 18
 				s_err=18;
 				return NULL;
@@ -115,7 +125,6 @@ BOOL BindList::initFlag=0;
 		if(status!=0)
 			{
 				//free(buff);
-				free(rawbuff);
 						//err 16 ??
 				s_err=16;
 				return NULL;
@@ -130,10 +139,10 @@ BOOL BindList::initFlag=0;
 	//free(buff);
 	
 
-	//¿ªÊ¼»ñÈ¡IPĞÅÏ¢
+	//å¼€å§‹è·å–IPä¿¡æ¯
 	pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
 	if (pAdapterInfo == NULL) {
-		//err 13 ÄÚ´æÉêÇë²»×ã
+		//err 13 å†…å­˜ç”³è¯·ä¸è¶³
 		//	printf("Error allocating memory needed to call GetAdaptersinfo\n");
 		s_err=13;
 		free(rawbuff);
@@ -147,7 +156,6 @@ BOOL BindList::initFlag=0;
 		if (pAdapterInfo == NULL) {
 			//printf("Error allocating memory needed to call GetAdaptersinfo\n");
 			s_err=13;
-			free(rawbuff);
 			return NULL;
 		}
 	}
@@ -174,46 +182,44 @@ BOOL BindList::initFlag=0;
 		}
 	} else {
 		s_err=19;
-		free(rawbuff);
 		return NULL;
 		//printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
 	}
-	free(rawbuff);
 	if (pAdapterInfo)
 		free(pAdapterInfo);
 	return &s_self;
 }
 
-uint BindList::GetError()
+uint CBindList::GetError()
 {
 	return s_err;
 }
-const BindAdapter * BindList::getByMac(wstring mac) const
+const CBindAdapter * CBindList::getByMac(wstring mac) const
 {
-	vector<BindAdapter>::const_iterator it;
+	vector<CBindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameMac(mac))return &(*it);
 	return NULL;
 }
-const BindAdapter * BindList::getByIP(wstring ip)  const
+const CBindAdapter * CBindList::getByIP(wstring ip)  const
 {
-	vector<BindAdapter>::const_iterator it;
+	vector<CBindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if(it->isSameIP(ip))return &(*it);
 	return NULL;
 }
-const BindAdapter * BindList::getByName(wstring s)  const
+const CBindAdapter * CBindList::getByName(wstring s)  const
 {
-	vector<BindAdapter>::const_iterator it;
+	vector<CBindAdapter>::const_iterator it;
 	for(it=m_Adapters.begin();it!=m_Adapters.end();it++)
 		if((*it->getName())==s)return &(*it);
 	return NULL;
 }
-const vector<BindAdapter> *BindList::getLists() const
+const vector<CBindAdapter> *CBindList::getLists() const
 {
 	return &m_Adapters;
 }
-uint BindList::getSize()
+uint CBindList::GetSize()
 {
 	return (uint)m_Adapters.size();
 }

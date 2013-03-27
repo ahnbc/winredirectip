@@ -89,7 +89,7 @@ UINT DrvCall::OpenIo()
 	if(s_mainIo==(HANDLE)INVALID_HANDLE_VALUE)
 	{
 		s_mainIo=0;
-		//err 3 ÎŞ·¨¶ÁÈëÇı¶¯
+		//err 3 æ— æ³•è¯»å…¥é©±åŠ¨
 		return 3;
 	}
 	return 0;
@@ -103,7 +103,7 @@ UINT DrvCall::OpenLib(){
 		s_lib=LoadLibraryW(L"PcaFilterApi.dll");
 	if(s_lib==NULL)
 	{
-		//err 1 ¿â²»´æÔÚ
+		//err 1 åº“ä¸å­˜åœ¨
 		return 1;
 	}
 	if(initFlag==0||!pPCASIM_ResetPktRedirFilter)
@@ -131,7 +131,7 @@ UINT DrvCall::OpenLib(){
 		(!pPCASIM_GetAdapterVendorDescription)||
 		(!pPCASIM_GetDriverCapability)
 		)
-		//err 2 ¿âº¯ÊıÎŞ·¨¶ÁÈë
+		//err 2 åº“å‡½æ•°æ— æ³•è¯»å…¥
 		return 2;
 	initFlag=0;
 	return 0;

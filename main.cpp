@@ -1,7 +1,11 @@
-#include "main.h"
-#include "stdio.h"
 
-#include "stdlib.h"
+
+
+
+
+#include "main.h"
+#include "cstdio"
+#include "cstdlib"
 #include <process.h>
 #include "winsock.h"
 #include <string.h>
@@ -13,7 +17,7 @@
 #include "getopt.h"
 #include "wchar.h"
 #include "signal.h"
-
+#include "AutoBuffer.h"
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
 
@@ -26,59 +30,126 @@ PSIM_REQUEST pSIMRequest,
 LPOVERLAPPED lpOverlapped 
 ); 
 */
+#define MAXFF 0xFFFFFFFF
 
-const BindAdapter *g_cpAdp=NULL;
+/// 全局变量 空间
+namespace global
+{
+const CBindAdapter *g_cpAdp=NULL;
 static HANDLE g_hInThread=NULL;
 static HANDLE g_hOutThread=NULL;
 static HANDLE g_hMainThread=NULL;
 static BYTE   g_ulMACAddr[8]={0};
 static BOOL   g_bMacLocal=false;
-//unsigned  InID,OutID,MainID;
-//static byte Inbuff[0x1000];
-//static byte Outbuff[0x1000];
 static  uint g_dworgIP=0;//={221,231,130,70};
 static USHORT g_port=0;
 static UCHAR g_protocol=0;
-//static const BYTE sdip[4]={207,56,113,28};
 static uint g_dwrediIP=0;
-
 static CRITICAL_SECTION cs;
-#define MAXFF 0xFFFFFFFF
+static PKT_REDIR_FILTER_ENTRY g_Outent={0,MAXFF,0,MAXFF,REDIRECT,0};
+static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
+static vector<USHORT> noredirport;
+static MyCallBack g_InCallBack,g_OutCallBack;
+};
+/// 常量空间
+namespace const_var
+{
+	enum
+	{
+	IN_DIRECT=1,
+	OUT_DIRECT=2
+	};
+const static USHORT IP_PRO=0x0008,
+	PPPOE_PRO=0x6488,PPPOE_IP_PRO=0x2100,
+	LEN_ENT=14,LEN_PPPOE=8;
+const static UCHAR TCP_PRO=6,UDP_PRO=17;
+};
+
+/// 自定义类型
+typedef struct
+{
+	unsigned long saddr; //源IP地址      
+	unsigned long daddr; //目的IP地址       
+	uchar mbz;                   // mbz = must be zero, 用于填充对齐
+	uchar protocal;             //8位协议号       
+	unsigned short tcpl;    // TCP包长度      
+}psdheader_t;
+
+
+
+/// 回调函数
  VOID CALLBACK InIOReadCompletionRoutine(   
                   DWORD dwErrorCode,   
                   DWORD dwNumberOfBytesTransfered,   
                   LPOVERLAPPED lpOverlapped );
-  VOID CALLBACK OutIOReadCompletionRoutine(   
+ VOID CALLBACK OutIOReadCompletionRoutine(   
                   DWORD dwErrorCode,   
                   DWORD dwNumberOfBytesTransfered,   
                   LPOVERLAPPED lpOverlapped );
+  VOID CALLBACK InIOWriteCompletionRoutine(   
+                  DWORD dwErrorCode,   
+                  DWORD dwNumberOfBytesTransfered,   
+                  LPOVERLAPPED lpOverlapped );
+  VOID CALLBACK OutIOWriteCompletionRoutine(   
+                  DWORD dwErrorCode,   
+                  DWORD dwNumberOfBytesTransfered,   
+                  LPOVERLAPPED lpOverlapped );
+
+  /// 函数声明
+  /// 计算ip头的校验字
+  USHORT ip_checksum(IN USHORT* buffer, 
+					IN int size);
+  /// tcp udp头的计算
+  u16 tcpudp_sum_calc(IN byte protocal,
+	  IN u16 len_tcp,
+	  IN u16 src_addr[],
+	  IN u16 dest_addr[], 
+	  IN u16 buff[] ///< 第四层开始的buff
+  );
+  //判断当前是否是64位系统运行32位程序
+  BOOL IsWow64Current();
+
+  void AtExit(void);
+  void signalExit(int);
+
+   ///  写数据到网卡的完成io回调函数
+   void IOWriteCompletionRoutine( 
+	   IN byte byDirect, ///< 方向
+	   IN DWORD dwErrorCode,  ///< 以下标准回调 
+	   IN DWORD dwNumberOfBytesTransfered,   
+	   IN LPOVERLAPPED lpOverlapped );
    VOID CALLBACK InIOWriteCompletionRoutine(   
-                  DWORD dwErrorCode,   
-                  DWORD dwNumberOfBytesTransfered,   
-                  LPOVERLAPPED lpOverlapped );
-    VOID CALLBACK OutIOWriteCompletionRoutine(   
-                  DWORD dwErrorCode,   
-                  DWORD dwNumberOfBytesTransfered,   
-                  LPOVERLAPPED lpOverlapped );
+	   DWORD dwErrorCode,   
+	   DWORD dwNumberOfBytesTransfered,   
+	   LPOVERLAPPED lpOverlapped );
+   VOID CALLBACK OutIOWriteCompletionRoutine(   
+	   DWORD dwErrorCode,   
+	   DWORD dwNumberOfBytesTransfered,   
+	   LPOVERLAPPED lpOverlapped );
+
+   void  IOReadCompletionRoutine(   
+	   byte byDirect,
+	   DWORD dwErrorCode,   
+	   DWORD dwNumberOfBytesTransfered,   
+	   LPOVERLAPPED lpOverlapped );
+   VOID CALLBACK InIOReadCompletionRoutine(   
+	   DWORD dwErrorCode,   
+	   DWORD dwNumberOfBytesTransfered,   
+	   LPOVERLAPPED lpOverlapped );
+   VOID CALLBACK OutIOReadCompletionRoutine(   
+	   DWORD dwErrorCode,   
+	   DWORD dwNumberOfBytesTransfered,   
+	   LPOVERLAPPED lpOverlapped );
+   /// 工作线程的调度函数
+   unsigned WorkFunc(IN byte byDirect);
+   static unsigned __stdcall InWork(void * pList);
+   static unsigned __stdcall OutWork(void * pList);
+   /// 主调度线程 由他调用出入两个工作线程 并等待返回
+   static unsigned __stdcall MainWork(void * pList);
 
 
-static PKT_REDIR_FILTER_ENTRY g_Outent={0,MAXFF,0,MAXFF,REDIRECT,0};
-static PKT_REDIR_FILTER_ENTRY g_Inent={0,MAXFF,0,MAXFF,REDIRECT,0};
-
-const byte IN_DIRECT=1,OUT_DIRECT=2;
-//static vector<USHORT> noredirport;
-static vector<USHORT> noredirport;
-static MyCallBack g_InCallBack,g_OutCallBack;
-typedef struct
-{
-	unsigned long saddr; //ԴIP��ַ      
-	unsigned long daddr; //Ŀ��IP��ַ       
-	uchar mbz;                   // mbz = must be zero, ����������
-	uchar protocal;             //8λЭ���       
-	unsigned short tcpl;    // TCP������      
-}psdheader_t;
-
-
+  //---------------------------------------------以下为函数实现
+   /// 没啥好说,参看rfc
 USHORT ip_checksum(USHORT* buffer, int size) 
 {
 DWORD cksum = 0;
@@ -114,11 +185,9 @@ u16 i=len_tcp;
 	//initialize sum to zero
 
 while (i > 1) {
-	//printf("%4.4X ",*buff);
 	sum += (unsigned long)(*buff++);
 	i -= sizeof(USHORT);
 }
-//printf("\n%d\n",len_tcp);
 if (i) {
 	sum += *(UCHAR*)buff;
 }
@@ -147,6 +216,7 @@ if (i) {
 return (USHORT)(~sum);
 }
 
+/// 原理是判断 IsWow64Process 函数是否被加载
 BOOL IsWow64Current()  
 {  
 	FARPROC fnIsWow64Process;  
@@ -176,55 +246,57 @@ void signalExit(int)
 {
 	DWORD code;
 	static int ret=0;
-	DeleteCriticalSection(&cs);
+	using namespace global;
+	DeleteCriticalSection(&global::cs);
 	ret=DrvCall::Init();
 	if(ret)
 		return ret;
 	if(g_cpAdp!=NULL){
-	g_cpAdp->ResetHook();
-	g_cpAdp->BeginRequest()->CloseHandles();
-	g_cpAdp=NULL;
+		g_cpAdp->ResetHook();
+		g_cpAdp->CloseHandles();
+		g_cpAdp=NULL;
 	}
+	// 获取线程状态 存活的话要么强杀要么等待
 	if(g_hInThread!=NULL)
 	{
-	ret=GetExitCodeThread(g_hInThread,&code);
-	if(ret==STILL_ACTIVE)
-	{
-		if(freelib)
-		TerminateThread(g_hInThread,1);
-		WaitForSingleObject(g_hInThread,INFINITE);
-	}
-	CloseHandle(g_hInThread);
-	g_hInThread=NULL;
+		ret=GetExitCodeThread(g_hInThread,&code);
+		if(ret==STILL_ACTIVE)
+		{
+			if(freelib)
+				TerminateThread(g_hInThread,1);
+			WaitForSingleObject(g_hInThread,INFINITE);
+		}
+		CloseHandle(g_hInThread);
+		g_hInThread=NULL;
 	}
 	if(g_hOutThread!=NULL)
 	{
-	ret=GetExitCodeThread(g_hOutThread,&code);
-	if(ret==STILL_ACTIVE)
-	{
-		if(freelib)
-		TerminateThread(g_hOutThread,1);
-		WaitForSingleObject(g_hOutThread,INFINITE);
-		
-	}
+		ret=GetExitCodeThread(g_hOutThread,&code);
+		if(ret==STILL_ACTIVE)
+		{
+			if(freelib)
+				TerminateThread(g_hOutThread,1);
+			WaitForSingleObject(g_hOutThread,INFINITE);
+
+		}
 		CloseHandle(g_hOutThread);
 		g_hOutThread=NULL;
 	}
 	if(g_hMainThread!=NULL)
-	{
-	ret=GetExitCodeThread(g_hMainThread,&code);
-	if(ret==STILL_ACTIVE)
-	{
-		if(freelib)
-		TerminateThread(g_hMainThread,1);
-		WaitForSingleObject(g_hMainThread,INFINITE);
+		{
+		ret=GetExitCodeThread(g_hMainThread,&code);
+		if(ret==STILL_ACTIVE)
+		{
+			if(freelib)
+				TerminateThread(g_hMainThread,1);
+			WaitForSingleObject(g_hMainThread,INFINITE);
 		
-	}
-		CloseHandle(g_hMainThread);
-		g_hMainThread=NULL;
-	}
+		}
+			CloseHandle(g_hMainThread);
+			g_hMainThread=NULL;
+		}
 	if(freelib)
-	DrvCall::Free();//may be not needed
+		DrvCall::Free();//may be not needed
 	return 0;
 }
 
@@ -238,15 +310,17 @@ void signalExit(int)
 	 byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
 	 UINT ret;
 	 if(dwErrorCode!=0)return;
-	 ret=(byDirect==IN_DIRECT? \
-		 g_cpAdp->ReadInEx(buff,0x1000,lpOverlapped,InIOReadCompletionRoutine): \
-		 g_cpAdp->ReadOutEx(buff,0x1000,lpOverlapped,OutIOReadCompletionRoutine)
+	 ret=(byDirect==const_var::IN_DIRECT? \
+		 global::g_cpAdp->ReadInEx(buff,0x1000,lpOverlapped,InIOReadCompletionRoutine): \
+		 global::g_cpAdp->ReadOutEx(buff,0x1000,lpOverlapped,OutIOReadCompletionRoutine)
 		 );
 	 if(ret==0)
 	 {
-		 EnterCriticalSection(&cs);
-		 wprintf(L"%lsIOWriteCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?L"In":L"Out",GetLastError());
-		 LeaveCriticalSection(&cs);
+		 EnterCriticalSection(&global::cs);
+		 wprintf(L"%lsIOWriteCompletionRoutine Last Error:%d\n",
+			 byDirect==const_var::IN_DIRECT?L"In":L"Out",
+			 GetLastError());
+		 LeaveCriticalSection(&global::cs);
 	 }
 	 //IO Finish
  }
@@ -256,7 +330,7 @@ void signalExit(int)
                   LPOVERLAPPED lpOverlapped )
  {
 	
-	 IOWriteCompletionRoutine( IN_DIRECT,dwErrorCode,   
+	 IOWriteCompletionRoutine( const_var::IN_DIRECT,dwErrorCode,   
 		 dwNumberOfBytesTransfered,   
 		 lpOverlapped );
 	 
@@ -267,27 +341,40 @@ VOID CALLBACK OutIOWriteCompletionRoutine(
                   LPOVERLAPPED lpOverlapped )
  {
 
-	 IOWriteCompletionRoutine(OUT_DIRECT,dwErrorCode,   
+	 IOWriteCompletionRoutine(const_var::OUT_DIRECT,dwErrorCode,   
 		 dwNumberOfBytesTransfered,   
 		 lpOverlapped );
 	 
  }
-const static USHORT IP_PRO=0x0008,
-		 PPPOE_PRO=0x6488,PPPOE_IP_PRO=0x2100,
-		 LEN_ENT=14,LEN_PPPOE=8;
-const static UCHAR TCP_PRO=6,UDP_PRO=17;
 
 
-
+/**
+ * @function: IOReadCompletionRoutine
+ * @parameters:
+ *	- byDirect
+ *		方向
+ *	- dwNumberOfBytesTransfered
+ *		字节数
+ *	- lpOverlapped
+ *		包括数据的一个指向重叠io相关的数据
+ *	@description:
+ *		解析从数据链路层开始的数据包 支持pppoe 和 以太网 解析
+ *		修改ip并调用数据修改回调函数 最后重新计算校验字
+ *
+ **/
 void  IOReadCompletionRoutine(   
-	byte byDirect,
-	DWORD dwErrorCode,   
-	DWORD dwNumberOfBytesTransfered,   
-	LPOVERLAPPED lpOverlapped )
+	IN byte byDirect,
+	IN DWORD dwErrorCode,   
+	IN DWORD dwNumberOfBytesTransfered,   
+	IN LPOVERLAPPED lpOverlapped )
 {
-	ushort sum=0,proto_3=0,ppp_next_pro=0,proto_4=0,
+	ushort sum=0,//校验字
+		//以下为各种协议解析使用
+		proto_3=0,ppp_next_pro=0,
 		ip_offset=0,tcp_offset=0,tcp_all_len=0,ip_all_len,check_port=0,tcpudp_header_len=0;
+	//校正到数据部分
 	byte *buff=(byte *)lpOverlapped+sizeof(OVERLAPPED);
+	byte proto_4=0;
 	UCHAR ip_len;
 	UINT ret;
 	vector<USHORT>::iterator it;
@@ -295,100 +382,130 @@ void  IOReadCompletionRoutine(
 	if(dwNumberOfBytesTransfered>=(14+20))
 	{
 #if defined(DEBUG) || defined(_DEBUG)
-		EnterCriticalSection(&cs);
+		EnterCriticalSection(&global::cs);
 		printf("Read One Packet...\n");
-    	LeaveCriticalSection(&cs);
+    	LeaveCriticalSection(&global::cs);
 #endif
-		
+		// 详见以太协议包
 		proto_3=*(USHORT * )(buff+12);
-		if(proto_3==IP_PRO)
-			ip_offset=LEN_ENT;
-		else if(proto_3==PPPOE_PRO)
+		if(proto_3==const_var::IP_PRO)
+			// 直接ip协议的话ip头偏移为以太包长度
+			ip_offset=const_var::LEN_ENT;
+		// pppoe协议
+		else if(proto_3==const_var::PPPOE_PRO)
 		{
-			ppp_next_pro=*(USHORT *)(buff+LEN_ENT+6);
-			if(ppp_next_pro==PPPOE_IP_PRO)ip_offset=LEN_ENT+LEN_PPPOE;
+			// pppoe下层协议为 ip的话
+			ppp_next_pro=*(USHORT *)(buff+const_var::LEN_ENT+6);
+			if(ppp_next_pro==const_var::PPPOE_IP_PRO)
+				ip_offset=const_var::LEN_ENT+const_var::LEN_PPPOE;
 			else goto __write;
 		}
+		// 不是ip协议直接写
 		else 	goto __write;
+		// ip协议解析
 		proto_4=*(buff+ip_offset+9);
+		// 长度*4
 		ip_len=((*(buff+ip_offset))&0x0f)<<2;
+		// ip偏移+ip长度
 		tcp_offset=ip_offset+ip_len;
 		//	if(proto_4!=TCP_PRO||proto_4!=UDP_PRO)return;
 		//
-		if(proto_4==TCP_PRO&&g_protocol==2)
+		if(proto_4==const_var::TCP_PRO
+			&&global::g_protocol==2 // 需要勾的协议是UDP
+			)
 		{
 			goto __write;
 		}
-		if(proto_4==UDP_PRO&&g_protocol==1)
+		if(proto_4==const_var::UDP_PRO&&
+			global::g_protocol==1)
 		{
 			goto __write;
 		}
-		if(byDirect==IN_DIRECT)
+		// 根据方向不同,检查的端口不同
+		if(byDirect==const_var::IN_DIRECT)
 			check_port=*(USHORT *)(buff+tcp_offset);
 		else
 			check_port=*(USHORT *)(buff+tcp_offset+2);
+
 		check_port=ntohs(check_port);
-		if(g_port!=0&&check_port!=g_port)
+
+		if(global::g_port!=0 //为0表示不检查
+			&&check_port!=global::g_port)
 		{
 			goto __write;
 		}
-		for(it=noredirport.begin();it!=noredirport.end();it++)
+		//跳过不转发的端口
+		for(it=global::noredirport.begin();
+			it!=global::noredirport.end();
+			it++)
 		{
 			if(check_port==*it)
 				goto __write;
 		}
 	#if defined(DEBUG) || defined(_DEBUG)	
-		EnterCriticalSection(&cs);
-		printf("From :%d.%d.%d.%d ",buff[ip_offset+15],buff[ip_offset+14],buff[ip_offset+13],buff[ip_offset+12]);
+		EnterCriticalSection(&global::cs);
+		printf("From :%d.%d.%d.%d \n",buff[ip_offset+15],buff[ip_offset+14],buff[ip_offset+13],buff[ip_offset+12]);
 		printf("To :%d.%d.%d.%d \n",buff[ip_offset+19],buff[ip_offset+18],buff[ip_offset+17],buff[ip_offset+16]);
-		LeaveCriticalSection(&cs);
+		LeaveCriticalSection(&global::cs);
 	#endif
+		// ip校验字位置
 		*(ushort *)(buff+ip_offset+10)=0;
-		if(byDirect==IN_DIRECT)
-		*((uint *)(buff+ip_offset+12))=g_dworgIP;
+		// 修正ip
+		if(byDirect==const_var::IN_DIRECT)
+		*((uint *)(buff+ip_offset+12))=global::g_dworgIP;
 		else
-		*((uint *)(buff+ip_offset+16))=g_dwrediIP;
-
+		*((uint *)(buff+ip_offset+16))=global::g_dwrediIP;
+		// 计算校验字并回写
 		sum=ip_checksum((ushort *)(buff+ip_offset),ip_len);
 		*(ushort *)(buff+ip_offset+10)=sum;
-		#if defined(DEBUG) || defined(_DEBUG)
-		EnterCriticalSection(&cs);
-		printf("Packet IP Redirect...\n");
-		LeaveCriticalSection(&cs);
-		#endif
-			if(g_bMacLocal)
-			{
 
-			
-		ret=(byDirect==IN_DIRECT?6:0);
-		memmove(buff+ret,g_ulMACAddr,6);
-			}
-		if(proto_4==TCP_PRO||proto_4==UDP_PRO)
+		#if defined(DEBUG) || defined(_DEBUG)
+		EnterCriticalSection(&global::cs);
+		printf("Packet IP Redirect...\n");
+		LeaveCriticalSection(&global::cs);
+		#endif
+		// 检查 mac地址是否需要重写
+		if(global::g_bMacLocal)
 		{
-			
+			ret=(byDirect==const_var::IN_DIRECT?6:0);
+			memmove(buff+ret,global::g_ulMACAddr,6);
+		}
+		//处理tcp 和udp
+		if(proto_4==const_var::TCP_PRO||proto_4==const_var::UDP_PRO)
+		{
 
 			ip_all_len=htons(*((ushort *)(buff+ip_offset+2)));
 			tcp_all_len=ip_all_len-ip_len;
-			//
-			if(proto_4==TCP_PRO)
+			//tcp是可变长度,udp是固定长度
+			if(proto_4==const_var::TCP_PRO)
 			tcpudp_header_len=((*(buff+tcp_offset+12))&0xf0)>>2;
 			else
 			tcpudp_header_len=8;
-
-			if(byDirect==IN_DIRECT&&g_InCallBack)
-				g_InCallBack(proto_4,buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
-			if(byDirect==OUT_DIRECT&&g_OutCallBack)
-				g_OutCallBack(proto_4,buff+tcp_offset+tcpudp_header_len,tcp_all_len-tcpudp_header_len);
-			if(proto_4==TCP_PRO)
+			//方向检查 并 检查是否要执行个人回调函数
+			if(byDirect==const_var::IN_DIRECT&&
+				global::g_InCallBack)
+				global::g_InCallBack(proto_4,
+				buff+tcp_offset+tcpudp_header_len,
+				tcp_all_len-tcpudp_header_len);
+			if(byDirect==const_var::OUT_DIRECT&&
+				global::g_OutCallBack)
+				global::g_OutCallBack(proto_4,
+				buff+tcp_offset+tcpudp_header_len,
+				tcp_all_len-tcpudp_header_len);
+			// tcp校验字重算
+			if(proto_4==const_var::TCP_PRO)
 			{
-			*(ushort *)(buff+tcp_offset+16)=0;
-			//cal len ip header all length - ip header length
+				*(ushort *)(buff+tcp_offset+16)=0;
+				//cal len ip header all length - ip header length
 
-			sum=tcpudp_sum_calc(proto_4,tcp_all_len,(USHORT *)(buff+ip_offset+12),
-				(USHORT *)(buff+ip_offset+16),(USHORT *)(buff+tcp_offset));
+				sum=tcpudp_sum_calc(proto_4,tcp_all_len,
+					(USHORT *)(buff+ip_offset+12),
+					(USHORT *)(buff+ip_offset+16),
+					(USHORT *)(buff+tcp_offset));
 
-			*(ushort *)(buff+tcp_offset+16)=sum;
+				*(ushort *)(buff+tcp_offset+16)=sum;
 			}
+			//udp
 			else
 			{
 				*(ushort *)(buff+tcp_offset+6)=0;
@@ -399,19 +516,20 @@ void  IOReadCompletionRoutine(
 
 				*(ushort *)(buff+tcp_offset+6)=sum;
 			}
-		}
-	}
+		}// ? if(tpc||udp) ?
+	}// ? if (dwNumberOfBytesTransfered>???) ?
 
 __write:
-	ret=(byDirect==IN_DIRECT? \
-		g_cpAdp->WriteOutEx(buff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine): \
-		g_cpAdp->WriteInEx(buff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine)
+	ret=(byDirect==const_var::IN_DIRECT? \
+		global::g_cpAdp->WriteOutEx(buff,dwNumberOfBytesTransfered,lpOverlapped,InIOWriteCompletionRoutine): \
+		global::g_cpAdp->WriteInEx(buff,dwNumberOfBytesTransfered,lpOverlapped,OutIOWriteCompletionRoutine)
 		);
 	if(0==ret)
 	{
-		EnterCriticalSection(&cs);
-		wprintf(L"%lsIOReadCompletionRoutine Last Error:%d\n",byDirect==IN_DIRECT?L"In":L"Out",GetLastError());
-		LeaveCriticalSection(&cs);
+		EnterCriticalSection(&global::cs);
+		wprintf(L"%lsIOReadCompletionRoutine Last Error:%d\n",
+			byDirect==const_var::IN_DIRECT?L"In":L"Out",GetLastError());
+		LeaveCriticalSection(&global::cs);
 	}
 }
 
@@ -422,7 +540,7 @@ __write:
                   LPOVERLAPPED lpOverlapped )
  {
 	 IOReadCompletionRoutine( 
-		IN_DIRECT,
+		const_var::IN_DIRECT,
 		dwErrorCode,   
 		dwNumberOfBytesTransfered,   
 		 lpOverlapped );
@@ -434,7 +552,7 @@ __write:
  {
 	 
 	 IOReadCompletionRoutine( 
-		 OUT_DIRECT,
+		const_var::OUT_DIRECT,
 		 dwErrorCode,   
 		 dwNumberOfBytesTransfered,   
 		 lpOverlapped );
@@ -445,48 +563,61 @@ __write:
  {
 	 uint ret,i;
 	 PKT_REDIR_FILTER_ENTRY *ent;
-	 byte *(buff[0x40]),*Dbuff;
-	 ent=(byDirect==IN_DIRECT?
-		 &g_Inent:&g_Outent
+	 byte *(buff[0x40]),*Dbuff;//申请0x40 个 0x1000+OVERLAPPED 长度的数据块,
+	 //包括 OVERLAPPED 和 数据 Dbuff 指向数据部分
+	 //选择不同的钩子
+	 ent=(byDirect==const_var::IN_DIRECT?
+		 &global::g_Inent:&global::g_Outent
 		 );
-	 ret=(byDirect==IN_DIRECT?
-		 g_cpAdp->SetInHook(ent,1):
-		g_cpAdp->SetOutHook(ent,1)
+	 ret=(byDirect==const_var::IN_DIRECT?
+		 global::g_cpAdp->SetInHook(ent,1):
+		global::g_cpAdp->SetOutHook(ent,1)
 	 );
 	 if(ret!=0)
 		 return 0xFF;
-	 EnterCriticalSection(&cs);
-	 wprintf(L"start %lswork\n",byDirect==IN_DIRECT?L"in":L"out");
-	 LeaveCriticalSection(&cs);
+	 EnterCriticalSection(&global::cs);
+	 wprintf(L"start %lswork\n",byDirect==const_var::IN_DIRECT?L"in":L"out");
+	 LeaveCriticalSection(&global::cs);
+
 	 for(i=0;i<0x40;i++)
 	 {
-		 if(!g_cpAdp->isInHandleOpen())break;
+		 //端口被关闭就退出
+		 if((!global::g_cpAdp->isInHandleOpen())&&
+			 byDirect==const_var::IN_DIRECT)break;
+		 if((!global::g_cpAdp->isOutHandleOpen())&&
+			 byDirect==const_var::OUT_DIRECT)break;
+
 		 buff[i]=(byte *)malloc(0x1000+sizeof(OVERLAPPED));
 		 Dbuff=buff[i]+sizeof(OVERLAPPED);
 		 memset(buff[i],0,sizeof(OVERLAPPED));
-		 ret=(byDirect==IN_DIRECT?
-			 g_cpAdp->ReadInEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine):
-			 g_cpAdp->ReadOutEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine)
+		 ret=(byDirect==const_var::IN_DIRECT?
+			 global::g_cpAdp->ReadInEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],InIOReadCompletionRoutine):
+			 global::g_cpAdp->ReadOutEx(Dbuff,0x1000,(LPOVERLAPPED)buff[i],OutIOReadCompletionRoutine)
 			 );
 		 if(ret==0)
 		 {
-			 EnterCriticalSection(&cs);
-			 wprintf(L"%swork  stop:%d\n",byDirect==IN_DIRECT?L"in":L"out",GetLastError());
-			 LeaveCriticalSection(&cs);
+			 EnterCriticalSection(&global::cs);
+			 wprintf(L"%swork  stop:%d\n",
+				 byDirect==const_var::IN_DIRECT?L"in":L"out",
+				 GetLastError());
+			 LeaveCriticalSection(&global::cs);
 			 break;
 		 }
 	 }
 	 while(1)
 	 {
+		 // 睡觉
 		 SleepEx(0x1f4,1);
-		 if(g_cpAdp==NULL)break;
-		 ret=(byDirect==IN_DIRECT?
-			 g_cpAdp->isInHandleOpen():
-			 g_cpAdp->isOutHandleOpen());
+		 //检查
+		 if(global::g_cpAdp==NULL)break;
+		 ret=(byDirect==const_var::IN_DIRECT?
+			 global::g_cpAdp->isInHandleOpen():
+			 global::g_cpAdp->isOutHandleOpen());
 		 if(!ret)break;
 	 }
 	 for(i=0;i<0x40;i++)
 	 {
+		 // 异常退出就由系统回收
 		 free(buff[i]);
 	 }
 	 return 0;
@@ -494,39 +625,42 @@ __write:
 
 static unsigned __stdcall InWork(void * pList)
 {
-	return WorkFunc(IN_DIRECT);
+	return WorkFunc(const_var::IN_DIRECT);
 }
 static unsigned __stdcall OutWork(void * pList)
 {
-	return WorkFunc(OUT_DIRECT);
+	return WorkFunc(const_var::OUT_DIRECT);
 }
 
+/// 创建 进出线程并等待
 static unsigned __stdcall MainWork(void * pList)
 {
-	HANDLE hlist[2];
-	DWORD ret;
+	HANDLE hlist[2]; // 进出线程的 等待
+	DWORD ret; 
 	unsigned  InID,OutID;
-	if(!g_hInThread)
-	g_hInThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
-	if((!g_hInThread)||g_hInThread==INVALID_HANDLE_VALUE)
+	if(!global::g_hInThread)
+		global::g_hInThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
+	if((!global::g_hInThread)||
+		global::g_hInThread==INVALID_HANDLE_VALUE)
 	{
 		return 0;
 	}
 
-	if(!g_hOutThread)
-	g_hOutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
-	if((!g_hOutThread)||g_hOutThread==INVALID_HANDLE_VALUE)
+	if(!global::g_hOutThread)
+		global::g_hOutThread=(HANDLE)_beginthreadex(NULL,0,OutWork,NULL,0,&OutID);
+	if((!global::g_hOutThread)||global::g_hOutThread==INVALID_HANDLE_VALUE)
 	{
 		//TerminateThread(g_hInThread,1);
-		WaitForSingleObject(g_hInThread,INFINITE);
-		CloseHandle(g_hInThread);
-		g_hInThread=0;
+		WaitForSingleObject(global::g_hInThread,
+			INFINITE);
+		CloseHandle(global::g_hInThread);
+		global::g_hInThread=0;
 		return 0;
 	}
-	hlist[0]=g_hInThread;
-	hlist[1]=g_hOutThread;
+	hlist[0]=global::g_hInThread;
+	hlist[1]=global::g_hOutThread;
 	do{
-	ret=WaitForMultipleObjectsEx(2,hlist,0,0x3e8,1);
+		ret=WaitForMultipleObjectsEx(2,hlist,0,0x3e8,1);
 	}while(ret==0x102);
 	return 0;
 }
@@ -537,77 +671,78 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	
 	int i=0,size=0,j=0;
 	static int ret=0;
-	BindList *list;
+	const CBindList *list;
 	unsigned  MainID;
 	hostent * he;
 	WORD wVersionRequested;
 	WSADATA wsaData;
-	char * chrtmp;
-	wchar_t *env_noport;
+	CAutoBuffer<char> chrtmp(100);
+	CAutoBuffer<wchar_t> env_noport(1000);
 	wchar_t *pport;
 	//wstring noport_str;
-	if(IsWow64Current())return 40;
-	env_noport=(wchar_t *)malloc(2000);
+	if(IsWow64Current())
+	{
+		return 40;
+	}
+	// 从环境中获取 不转发的端口
 	memset(env_noport,0,2000);
 	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
 	//noredirport=reg_noredirport;
 	if(ret!=0)
 	{
+		// 中间用任意非数字字符隔开
 		pport=env_noport;
 		while(pport[0]>=L'0'&&pport[0]<=L'9')
 		{
-			noredirport.push_back((USHORT)wcstol(pport,&pport,10));
+			global::noredirport.push_back((USHORT)wcstol(pport,&pport,10));
+			if(*pport==0)break;
 			pport++;
 		}
-		
 	}
-	free(env_noport);
-	InitializeCriticalSection(&cs);
-	g_protocol=proto;
-	g_port=wport;
+	InitializeCriticalSection(&global::cs);
+	// 设置全局的协议和端口
+	global::g_protocol=proto;
+	global::g_port=wport;
 	ret=DrvCall::Init();
 	if(ret)return ret;
-	list=BindList::getAllBindList();
+	list=CBindList::GetAllBindList();
 	if(list==NULL)
 	{
-		return BindList::GetError();
+		return CBindList::GetError();
 	}
+	//判断是设备名格式
 	if(wcsstr(szDevName,L"\\DEVICE\\")==szDevName)
-		g_cpAdp=list->getByName(wstring(szDevName));
+		global::g_cpAdp=list->getByName(wstring(szDevName));
+	// ip格式
 	else if (wcsstr(szDevName,L".")!=NULL)
 	{
-		g_cpAdp=list->getByIP(wstring(szDevName));
+		global::g_cpAdp=list->getByIP(wstring(szDevName));
 	}
+	// mac格式
 	else
 	{
-		g_cpAdp=list->getByMac(wstring(szDevName));
+		global::g_cpAdp=list->getByMac(wstring(szDevName));
 		
 	}
-	if(g_cpAdp==NULL)
+	if(global::g_cpAdp==NULL)
 	{
 		//if err20??
 		return 20;
 	}
-	ret=g_cpAdp->BeginRequest()->OpenHandles();
-	//DevName=g_cpAdp->getName()->c_str();
-	//vDevName=g_cpAdp->getvName()->c_str();
-	//InHandle=DrvCall::OpenLowerAdapter(DevName);
-//	pPCASIM_OpenVirtualAdapter(DevName);
-//	OutHandle=pPCASIM_OpenLowerAdapter(DevName);
-	//OutHandle=DrvCall::OpenVirtualAdapter(vDevName);
-//	printf("handle :%d,%d\n",InHandle,OutHandle);
+	ret=global::g_cpAdp->OpenHandles();
 	if(ret)
 	{
-		//err 9 In�����ȡʧ��
-		g_cpAdp->BeginRequest()->CloseHandles();
+		//err 9 In句柄获取失败
+		global::g_cpAdp->CloseHandles();
 		return 9;
 	}
+	// 开启socket
 	wVersionRequested =MAKEWORD( 2, 0 );
 	ret = WSAStartup( wVersionRequested, &wsaData );
 	if ( ret  ) return 33;
-	chrtmp=(char *)malloc(100);
 	memset(chrtmp,0,100);
 	wcstombs(chrtmp,cporIP,100);
+	// 域名到ip
 	he=gethostbyname(chrtmp);
 	if(!he||he->h_length!=4||!he->h_addr_list||!he->h_addr_list[0])
 	{
@@ -615,7 +750,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 		return 30;
 	}
 	//inet_addr
-	g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
+	global::g_dworgIP=*(DWORD *)(he->h_addr_list[0]);
 	memset(chrtmp,0,100);
 	wcstombs(chrtmp,cpreIP,100);
 	he=gethostbyname(chrtmp);
@@ -623,50 +758,64 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	{
 		return 31;
 	}
-	g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
-	ret=6;
-	if(NO_ERROR==SendARP(g_dwrediIP,INADDR_ANY,(PULONG)g_ulMACAddr,(PULONG)&ret)&&ret==6)
+	global::g_dwrediIP=*(DWORD *)(he->h_addr_list[0]);
+	// 以下两种情况是ip解析出错了
+	if(global::g_dworgIP==MAXFF||
+		global::g_dwrediIP==MAXFF)
 	{
-		g_bMacLocal=false;
-	}
-	else
-	{
-		g_bMacLocal=false;
-	}
-	free(chrtmp);
-	WSACleanup();
-	if(g_dworgIP==MAXFF||g_dwrediIP==MAXFF)
-	{
-		//err 11 ip�������
-	//	printf("IP error.\n");
+		//err 11 ip输入错误
+		//	printf("IP error.\n");
 		return 11;
 	}
 
-	g_Inent.m_IPSrcAddressRangeEnd=ntohl(g_dwrediIP);
-	g_Inent.m_IPSrcAddressRangeStart=ntohl(g_dwrediIP);
+	ret=6;
+	// arp 请求 来处理 局域网的 mac地址替换
+	if(NO_ERROR==SendARP(global::g_dwrediIP,
+		INADDR_ANY,(PULONG)global::g_ulMACAddr,
+		(PULONG)&ret)&&ret==6)
+	{
+		global::g_bMacLocal=false;
+	}
+	else
+	{
+		global::g_bMacLocal=false;
+	}
+	WSACleanup();
 	
-	g_Outent.m_IPDstAddressRangeEnd=ntohl(g_dworgIP);
-	g_Outent.m_IPDstAddressRangeStart=ntohl(g_dworgIP);
+	// 设置hook需要的结构
+	global::g_Inent.m_IPSrcAddressRangeEnd=
+		ntohl(global::g_dwrediIP);
+	global::g_Inent.m_IPSrcAddressRangeStart=
+		ntohl(global::g_dwrediIP);
+	
+	global::g_Outent.m_IPDstAddressRangeEnd=
+		ntohl(global::g_dworgIP);
+	global::g_Outent.m_IPDstAddressRangeStart=
+		ntohl(global::g_dworgIP);
 
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
 
+	//启动主线程
+   global::g_hMainThread=
+	   (HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
 
-   g_hMainThread=(HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
-
-   	if((!g_hMainThread)||(g_hMainThread==INVALID_HANDLE_VALUE))
+   	if((!global::g_hMainThread)||
+		(global::g_hMainThread==INVALID_HANDLE_VALUE))
 	{
-		//err 12 ���߳�����ʧ��
-		TerminateThread(g_hMainThread,1);
-		WaitForSingleObject(g_hMainThread,INFINITE);
-		CloseHandle(g_hMainThread);
-		g_hMainThread=0;
+		//err 12 主线程启动失败
+		TerminateThread(global::g_hMainThread,1);
+		WaitForSingleObject(global::g_hMainThread,INFINITE);
+		CloseHandle(global::g_hMainThread);
+		global::g_hMainThread=0;
 		return 12;
 	}
 	return 0;
 }
+/// 用于dll不能初始化 全局变量
 void WINAPI DllInit()
 {
+	using namespace global;
 	g_cpAdp=NULL;
 	g_hInThread=NULL;
 	g_hOutThread=NULL;
@@ -676,12 +825,18 @@ void WINAPI DllInit()
 	g_protocol=0;
 	g_dwrediIP=0;
 
-	g_Outent.m_IPSrcAddressRangeStart=g_Outent.m_IPDstAddressRangeStart=
-		g_Inent.m_IPSrcAddressRangeStart=g_Inent.m_IPDstAddressRangeStart=
-		g_Inent.m_nReserved=g_Outent.m_nReserved=0;
-	g_Outent.m_IPSrcAddressRangeEnd=g_Outent.m_IPDstAddressRangeEnd=
-		g_Inent.m_IPSrcAddressRangeEnd=g_Inent.m_IPDstAddressRangeEnd=MAXFF;
-		g_Outent.m_nFilterAction=g_Inent.m_nFilterAction=REDIRECT;
+	g_Outent.m_IPSrcAddressRangeStart=
+		g_Outent.m_IPDstAddressRangeStart=
+		g_Inent.m_IPSrcAddressRangeStart=
+		g_Inent.m_IPDstAddressRangeStart=
+		g_Inent.m_nReserved=
+		g_Outent.m_nReserved=0;
+	g_Outent.m_IPSrcAddressRangeEnd=
+		g_Outent.m_IPDstAddressRangeEnd=
+		g_Inent.m_IPSrcAddressRangeEnd=
+		g_Inent.m_IPDstAddressRangeEnd=MAXFF;
+	g_Outent.m_nFilterAction=
+		g_Inent.m_nFilterAction=REDIRECT;
 	
     g_InCallBack=NULL;
 	g_OutCallBack=NULL;
@@ -689,7 +844,7 @@ void WINAPI DllInit()
 	memset(g_ulMACAddr,0,8);
 	noredirport.clear();
 	DrvCall::initFlag=0;
-	BindList::initFlag=0;
+	CBindList::initFlag=0;
 }
 
 
@@ -725,20 +880,20 @@ int  wmain(int argc,wchar_t ** argv)
 	//uchar mIP[4]={60,176,43,163};
 	uint ret=0;
 	int ch;
-	BindList *list;
+	const CBindList *list;
 	USHORT mPort;
 	UCHAR mPro;
-	std::vector <BindAdapter>::const_iterator it;
+	std::vector <CBindAdapter>::const_iterator it;
 	//printf("%d\n",sizeof(ULONG));
 	if(IsWow64Current()){
 		wprintf(L"run in 64bit version..\n");
 		system("pause");
 		return 0;};
 if(argc ==1){
-	list=BindList::getAllBindList();
+	list=CBindList::GetAllBindList();
 	if(list==NULL)
 	{
-		wprintf(L"Error No:%d\n",BindList::GetError());
+		wprintf(L"Error No:%d\n",CBindList::GetError());
 		system("pause");
 		return 0;
 	}
@@ -793,8 +948,8 @@ if(argc ==1){
 		wprintf(L"Error Back:%d\n",ret);
 	}
 	wprintf(L"Running\n");
-		if(g_hMainThread){
-			WaitForSingleObject(g_hMainThread,INFINITE);
+		if(global::g_hMainThread){
+			WaitForSingleObject(global::g_hMainThread,INFINITE);
 		}
 	
 	wprintf(L"End\n");
@@ -805,19 +960,19 @@ if(argc ==1){
 void WINAPI RegisterNoPort(const USHORT * pPort,DWORD dSize)
 {
 	DWORD i;
-	noredirport.clear();
+	global::noredirport.clear();
 	if(pPort==NULL||dSize==0)return;
 	for(i=0;i<dSize;i++)
 	{
 		if(pPort[i]!=0)
-		noredirport.push_back(pPort[i]);
+		global::noredirport.push_back(pPort[i]);
 	}
 }
 void WINAPI RegisterInCallBack(const MyCallBack m)
 {
-	g_InCallBack=m;
+	global::g_InCallBack=m;
 }
 void WINAPI RegisterOutCallBack(const MyCallBack m)
 {
-	g_OutCallBack=m;
+	global::g_OutCallBack=m;
 }
