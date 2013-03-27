@@ -4,12 +4,12 @@
 #include "main.h"
 using namespace std;
 
-class BindAdapter
+class CBindAdapter
 {
 public:
-	BindAdapter(const wchar_t *vname,const wchar_t *name);
-	static UINT strMacConv(wstring,USHORT *) ;
-	static UINT MactoStr(USHORT *,wchar_t *) ;
+	CBindAdapter(const wchar_t *vname,const wchar_t *name);
+	static UINT StrMacConv(wstring,USHORT *) ;
+	static UINT MacToStr(USHORT *,wchar_t *) ;
 
 	const wstring * getvName() const{return &m_svAdapter;};
 	const wstring * getName() const{return &m_sAdapter;};
@@ -25,7 +25,7 @@ public:
 	void setDesc(const wchar_t *s){m_sDesc=s ;};
 	void setType(UINT s){m_nType=s ;};
 
-	BindAdapter * BeginRequest() const{return const_cast<BindAdapter *>(this);}; 
+	CBindAdapter * BeginRequest() const{return const_cast<CBindAdapter *>(this);}; ///< deprecated
 
 
 	BOOL isSameMac(wstring s) const{return m_sMac==s; };

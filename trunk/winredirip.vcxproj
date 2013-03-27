@@ -210,6 +210,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AutoBuffer.h" />
     <ClInclude Include="BindAdapter.h" />
     <ClInclude Include="BindList.h" />
     <ClInclude Include="DrvCall.h" />
