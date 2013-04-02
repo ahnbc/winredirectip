@@ -1,8 +1,4 @@
 
-
-
-
-
 #include "main.h"
 #include "cstdio"
 #include "cstdlib"
