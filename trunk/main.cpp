@@ -660,7 +660,7 @@ static unsigned __stdcall MainWork(void * pList)
 		return 0;
 	}
 	mutex=::CreateMutexW(NULL,FALSE,L"WINREDIR");
-	if(mutex==INVALID_HANDLE_VALUE||GetLastError()!=S_OK)
+	if(mutex==NULL||GetLastError()!=S_OK)
 		return 50;
 	hlist[0]=global::g_hInThread;
 	hlist[1]=global::g_hOutThread;
@@ -691,8 +691,11 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 		return 40;
 	}
 	mutex =::OpenMutexW(MUTEX_MODIFY_STATE,FALSE,L"WINREDIR");
-	if(mutex!=INVALID_HANDLE_VALUE || GetLastError()==S_OK)
+	if(mutex!=NULL )
+	{
+		ReleaseMutex(mutex);
 		return 51;
+	}
 	// 从环境中获取 不转发的端口
 	memset(env_noport,0,2000);
 	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
