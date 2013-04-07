@@ -37,227 +37,176 @@ namespace mslogin
 		private void InitializeComponent()
 		{
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.UI1 = new System.Windows.Forms.Label();
-            this.AdaptorcomboBox = new System.Windows.Forms.ComboBox();
-            this.statusStrip = new System.Windows.Forms.StatusStrip();
-            this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.UI2 = new System.Windows.Forms.Label();
-            this.localeBox = new System.Windows.Forms.ComboBox();
-            this.UI3 = new System.Windows.Forms.Label();
-            this.ipBox = new System.Windows.Forms.TextBox();
-            this.Commit = new System.Windows.Forms.Button();
-            this.SetPath = new System.Windows.Forms.Button();
-            this.Check = new System.Windows.Forms.Button();
-            this.portBox = new System.Windows.Forms.TextBox();
-            this.Stop = new System.Windows.Forms.Button();
+            this.m_labNetWork = new System.Windows.Forms.Label();
+            this.m_AdaptorcomboBox = new System.Windows.Forms.ComboBox();
+            this.m_statusStrip = new System.Windows.Forms.StatusStrip();
+            this.m_StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.m_lablocale = new System.Windows.Forms.Label();
+            this.m_localeBox = new System.Windows.Forms.ComboBox();
+            this.m_labIp = new System.Windows.Forms.Label();
+            this.m_ipBox = new System.Windows.Forms.TextBox();
+            this.m_btnCommit = new System.Windows.Forms.Button();
+            this.m_btnSetPath = new System.Windows.Forms.Button();
+            this.m_btnCheck = new System.Windows.Forms.Button();
+            this.m_portBox = new System.Windows.Forms.TextBox();
+            this.m_btnStop = new System.Windows.Forms.Button();
             this.Mainpanel = new System.Windows.Forms.Panel();
-            this.Expanel = new System.Windows.Forms.Panel();
-            this.RedirectOnlyButton = new System.Windows.Forms.Button();
-            this.fixpatchbox = new System.Windows.Forms.TextBox();
-            this.FixPatchlabel = new System.Windows.Forms.Label();
-            this.NoPortBox = new System.Windows.Forms.TextBox();
-            this.NoPortlabel = new System.Windows.Forms.Label();
-            this.statusStrip.SuspendLayout();
+            this.m_btnMore = new System.Windows.Forms.Button();
+            this.m_statusStrip.SuspendLayout();
             this.Mainpanel.SuspendLayout();
-            this.Expanel.SuspendLayout();
             this.SuspendLayout();
             // 
-            // UI1
+            // m_labNetWork
             // 
-            this.UI1.Location = new System.Drawing.Point(3, 3);
-            this.UI1.Name = "UI1";
-            this.UI1.Size = new System.Drawing.Size(232, 20);
-            this.UI1.TabIndex = 0;
-            this.UI1.Text = "NetWork Interface:";
+            this.m_labNetWork.Location = new System.Drawing.Point(3, 3);
+            this.m_labNetWork.Name = "m_labNetWork";
+            this.m_labNetWork.Size = new System.Drawing.Size(232, 20);
+            this.m_labNetWork.TabIndex = 0;
+            this.m_labNetWork.Text = "NetWork Interface:";
             // 
-            // AdaptorcomboBox
+            // m_AdaptorcomboBox
             // 
-            this.AdaptorcomboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.AdaptorcomboBox.FormattingEnabled = true;
-            this.AdaptorcomboBox.Location = new System.Drawing.Point(8, 26);
-            this.AdaptorcomboBox.Name = "AdaptorcomboBox";
-            this.AdaptorcomboBox.Size = new System.Drawing.Size(186, 20);
-            this.AdaptorcomboBox.TabIndex = 1;
+            this.m_AdaptorcomboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.m_AdaptorcomboBox.FormattingEnabled = true;
+            this.m_AdaptorcomboBox.Location = new System.Drawing.Point(8, 26);
+            this.m_AdaptorcomboBox.Name = "m_AdaptorcomboBox";
+            this.m_AdaptorcomboBox.Size = new System.Drawing.Size(186, 20);
+            this.m_AdaptorcomboBox.TabIndex = 1;
             // 
-            // statusStrip
+            // m_statusStrip
             // 
-            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.StatusLabel});
-            this.statusStrip.Location = new System.Drawing.Point(5, 253);
-            this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(455, 22);
-            this.statusStrip.SizingGrip = false;
-            this.statusStrip.TabIndex = 2;
-            this.statusStrip.Text = "statusStrip";
+            this.m_statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.m_StatusLabel});
+            this.m_statusStrip.Location = new System.Drawing.Point(5, 246);
+            this.m_statusStrip.Name = "m_statusStrip";
+            this.m_statusStrip.Size = new System.Drawing.Size(246, 22);
+            this.m_statusStrip.SizingGrip = false;
+            this.m_statusStrip.TabIndex = 2;
+            this.m_statusStrip.Text = "statusStrip";
             // 
-            // StatusLabel
+            // m_StatusLabel
             // 
-            this.StatusLabel.Name = "StatusLabel";
-            this.StatusLabel.Size = new System.Drawing.Size(74, 17);
-            this.StatusLabel.Text = "StatusLabel";
+            this.m_StatusLabel.Name = "m_StatusLabel";
+            this.m_StatusLabel.Size = new System.Drawing.Size(73, 17);
+            this.m_StatusLabel.Text = "StatusLabel";
             // 
-            // UI2
+            // m_lablocale
             // 
-            this.UI2.Location = new System.Drawing.Point(3, 54);
-            this.UI2.Name = "UI2";
-            this.UI2.Size = new System.Drawing.Size(232, 18);
-            this.UI2.TabIndex = 3;
-            this.UI2.Text = "MS locale:";
+            this.m_lablocale.Location = new System.Drawing.Point(3, 54);
+            this.m_lablocale.Name = "m_lablocale";
+            this.m_lablocale.Size = new System.Drawing.Size(232, 18);
+            this.m_lablocale.TabIndex = 3;
+            this.m_lablocale.Text = "MS locale:";
             // 
-            // localeBox
+            // m_localeBox
             // 
-            this.localeBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.localeBox.FormattingEnabled = true;
-            this.localeBox.Items.AddRange(new object[] {
+            this.m_localeBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.m_localeBox.FormattingEnabled = true;
+            this.m_localeBox.Items.AddRange(new object[] {
             "Chinese"});
-            this.localeBox.Location = new System.Drawing.Point(8, 75);
-            this.localeBox.Name = "localeBox";
-            this.localeBox.Size = new System.Drawing.Size(186, 20);
-            this.localeBox.TabIndex = 4;
+            this.m_localeBox.Location = new System.Drawing.Point(8, 75);
+            this.m_localeBox.Name = "m_localeBox";
+            this.m_localeBox.Size = new System.Drawing.Size(186, 20);
+            this.m_localeBox.TabIndex = 4;
             // 
-            // UI3
+            // m_labIp
             // 
-            this.UI3.Location = new System.Drawing.Point(6, 106);
-            this.UI3.Name = "UI3";
-            this.UI3.Size = new System.Drawing.Size(229, 23);
-            this.UI3.TabIndex = 5;
-            this.UI3.Text = "Private Server:(IP or domain)";
+            this.m_labIp.Location = new System.Drawing.Point(6, 106);
+            this.m_labIp.Name = "m_labIp";
+            this.m_labIp.Size = new System.Drawing.Size(229, 23);
+            this.m_labIp.TabIndex = 5;
+            this.m_labIp.Text = "Private Server:(IP or domain)";
             // 
-            // ipBox
+            // m_ipBox
             // 
-            this.ipBox.Location = new System.Drawing.Point(8, 132);
-            this.ipBox.Name = "ipBox";
-            this.ipBox.Size = new System.Drawing.Size(119, 21);
-            this.ipBox.TabIndex = 6;
+            this.m_ipBox.Location = new System.Drawing.Point(8, 132);
+            this.m_ipBox.Name = "m_ipBox";
+            this.m_ipBox.Size = new System.Drawing.Size(119, 21);
+            this.m_ipBox.TabIndex = 6;
             // 
-            // Commit
+            // m_btnCommit
             // 
-            this.Commit.Location = new System.Drawing.Point(5, 159);
-            this.Commit.Name = "Commit";
-            this.Commit.Size = new System.Drawing.Size(110, 31);
-            this.Commit.TabIndex = 7;
-            this.Commit.Text = "Commit";
-            this.Commit.UseVisualStyleBackColor = true;
-            this.Commit.Click += new System.EventHandler(this.CommitClick);
+            this.m_btnCommit.Location = new System.Drawing.Point(5, 159);
+            this.m_btnCommit.Name = "m_btnCommit";
+            this.m_btnCommit.Size = new System.Drawing.Size(110, 31);
+            this.m_btnCommit.TabIndex = 7;
+            this.m_btnCommit.Text = "Commit";
+            this.m_btnCommit.UseVisualStyleBackColor = true;
+            this.m_btnCommit.Click += new System.EventHandler(this.CommitClick);
             // 
-            // SetPath
+            // m_btnSetPath
             // 
-            this.SetPath.Location = new System.Drawing.Point(122, 159);
-            this.SetPath.Name = "SetPath";
-            this.SetPath.Size = new System.Drawing.Size(91, 31);
-            this.SetPath.TabIndex = 8;
-            this.SetPath.Text = "SetPath";
-            this.SetPath.UseVisualStyleBackColor = true;
-            this.SetPath.Click += new System.EventHandler(this.SetPath_Click);
+            this.m_btnSetPath.Location = new System.Drawing.Point(122, 159);
+            this.m_btnSetPath.Name = "m_btnSetPath";
+            this.m_btnSetPath.Size = new System.Drawing.Size(91, 31);
+            this.m_btnSetPath.TabIndex = 8;
+            this.m_btnSetPath.Text = "SetPath";
+            this.m_btnSetPath.UseVisualStyleBackColor = true;
+            this.m_btnSetPath.Click += new System.EventHandler(this.SetPath_Click);
             // 
-            // Check
+            // m_btnCheck
             // 
-            this.Check.Location = new System.Drawing.Point(8, 196);
-            this.Check.Name = "Check";
-            this.Check.Size = new System.Drawing.Size(94, 34);
-            this.Check.TabIndex = 9;
-            this.Check.Text = "Check";
-            this.Check.UseVisualStyleBackColor = true;
-            this.Check.Click += new System.EventHandler(this.Check_Click);
+            this.m_btnCheck.Location = new System.Drawing.Point(8, 196);
+            this.m_btnCheck.Name = "m_btnCheck";
+            this.m_btnCheck.Size = new System.Drawing.Size(94, 34);
+            this.m_btnCheck.TabIndex = 9;
+            this.m_btnCheck.Text = "Check";
+            this.m_btnCheck.UseVisualStyleBackColor = true;
+            this.m_btnCheck.Click += new System.EventHandler(this.Check_Click);
             // 
-            // portBox
+            // m_portBox
             // 
-            this.portBox.Location = new System.Drawing.Point(133, 132);
-            this.portBox.Name = "portBox";
-            this.portBox.Size = new System.Drawing.Size(80, 21);
-            this.portBox.TabIndex = 10;
+            this.m_portBox.Location = new System.Drawing.Point(133, 132);
+            this.m_portBox.Name = "m_portBox";
+            this.m_portBox.Size = new System.Drawing.Size(80, 21);
+            this.m_portBox.TabIndex = 10;
             // 
-            // Stop
+            // m_btnStop
             // 
-            this.Stop.Location = new System.Drawing.Point(118, 196);
-            this.Stop.Name = "Stop";
-            this.Stop.Size = new System.Drawing.Size(95, 34);
-            this.Stop.TabIndex = 11;
-            this.Stop.Text = "Stop Redirect";
-            this.Stop.UseVisualStyleBackColor = true;
-            this.Stop.Click += new System.EventHandler(this.Stop_Click);
+            this.m_btnStop.Location = new System.Drawing.Point(118, 196);
+            this.m_btnStop.Name = "m_btnStop";
+            this.m_btnStop.Size = new System.Drawing.Size(95, 34);
+            this.m_btnStop.TabIndex = 11;
+            this.m_btnStop.Text = "Stop Redirect";
+            this.m_btnStop.UseVisualStyleBackColor = true;
+            this.m_btnStop.Click += new System.EventHandler(this.Stop_Click);
             // 
             // Mainpanel
             // 
-            this.Mainpanel.Controls.Add(this.UI1);
-            this.Mainpanel.Controls.Add(this.Stop);
-            this.Mainpanel.Controls.Add(this.AdaptorcomboBox);
-            this.Mainpanel.Controls.Add(this.portBox);
-            this.Mainpanel.Controls.Add(this.UI2);
-            this.Mainpanel.Controls.Add(this.Check);
-            this.Mainpanel.Controls.Add(this.localeBox);
-            this.Mainpanel.Controls.Add(this.SetPath);
-            this.Mainpanel.Controls.Add(this.UI3);
-            this.Mainpanel.Controls.Add(this.Commit);
-            this.Mainpanel.Controls.Add(this.ipBox);
+            this.Mainpanel.Controls.Add(this.m_btnMore);
+            this.Mainpanel.Controls.Add(this.m_labNetWork);
+            this.Mainpanel.Controls.Add(this.m_btnStop);
+            this.Mainpanel.Controls.Add(this.m_AdaptorcomboBox);
+            this.Mainpanel.Controls.Add(this.m_portBox);
+            this.Mainpanel.Controls.Add(this.m_lablocale);
+            this.Mainpanel.Controls.Add(this.m_btnCheck);
+            this.Mainpanel.Controls.Add(this.m_localeBox);
+            this.Mainpanel.Controls.Add(this.m_btnSetPath);
+            this.Mainpanel.Controls.Add(this.m_labIp);
+            this.Mainpanel.Controls.Add(this.m_btnCommit);
+            this.Mainpanel.Controls.Add(this.m_ipBox);
             this.Mainpanel.Location = new System.Drawing.Point(8, 3);
             this.Mainpanel.Name = "Mainpanel";
             this.Mainpanel.Size = new System.Drawing.Size(234, 238);
             this.Mainpanel.TabIndex = 12;
             // 
-            // Expanel
+            // m_btnMore
             // 
-            this.Expanel.Controls.Add(this.RedirectOnlyButton);
-            this.Expanel.Controls.Add(this.fixpatchbox);
-            this.Expanel.Controls.Add(this.FixPatchlabel);
-            this.Expanel.Controls.Add(this.NoPortBox);
-            this.Expanel.Controls.Add(this.NoPortlabel);
-            this.Expanel.Location = new System.Drawing.Point(249, 4);
-            this.Expanel.Name = "Expanel";
-            this.Expanel.Size = new System.Drawing.Size(181, 237);
-            this.Expanel.TabIndex = 13;
-            // 
-            // RedirectOnlyButton
-            // 
-            this.RedirectOnlyButton.Location = new System.Drawing.Point(24, 111);
-            this.RedirectOnlyButton.Name = "RedirectOnlyButton";
-            this.RedirectOnlyButton.Size = new System.Drawing.Size(93, 31);
-            this.RedirectOnlyButton.TabIndex = 4;
-            this.RedirectOnlyButton.Text = "RedirectOnly";
-            this.RedirectOnlyButton.UseVisualStyleBackColor = true;
-            this.RedirectOnlyButton.Click += new System.EventHandler(this.RedirectOnlyButton_Click);
-            // 
-            // fixpatchbox
-            // 
-            this.fixpatchbox.Location = new System.Drawing.Point(16, 79);
-            this.fixpatchbox.Name = "fixpatchbox";
-            this.fixpatchbox.Size = new System.Drawing.Size(100, 21);
-            this.fixpatchbox.TabIndex = 3;
-            // 
-            // FixPatchlabel
-            // 
-            this.FixPatchlabel.AutoSize = true;
-            this.FixPatchlabel.Location = new System.Drawing.Point(22, 58);
-            this.FixPatchlabel.Name = "FixPatchlabel";
-            this.FixPatchlabel.Size = new System.Drawing.Size(59, 12);
-            this.FixPatchlabel.TabIndex = 2;
-            this.FixPatchlabel.Text = "FixPatch:";
-            // 
-            // NoPortBox
-            // 
-            this.NoPortBox.Location = new System.Drawing.Point(13, 25);
-            this.NoPortBox.Name = "NoPortBox";
-            this.NoPortBox.Size = new System.Drawing.Size(144, 21);
-            this.NoPortBox.TabIndex = 1;
-            // 
-            // NoPortlabel
-            // 
-            this.NoPortlabel.AutoSize = true;
-            this.NoPortlabel.Location = new System.Drawing.Point(20, 9);
-            this.NoPortlabel.Name = "NoPortlabel";
-            this.NoPortlabel.Size = new System.Drawing.Size(95, 12);
-            this.NoPortlabel.TabIndex = 0;
-            this.NoPortlabel.Text = "NoRedirectPort:";
-            this.NoPortlabel.Click += new System.EventHandler(this.NoPortlabel_Click);
+            this.m_btnMore.Location = new System.Drawing.Point(212, 91);
+            this.m_btnMore.Name = "m_btnMore";
+            this.m_btnMore.Size = new System.Drawing.Size(21, 35);
+            this.m_btnMore.TabIndex = 12;
+            this.m_btnMore.Text = ">";
+            this.m_btnMore.UseVisualStyleBackColor = true;
+            this.m_btnMore.Click += new System.EventHandler(this.More_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(460, 275);
-            this.Controls.Add(this.Expanel);
+            this.ClientSize = new System.Drawing.Size(251, 268);
             this.Controls.Add(this.Mainpanel);
-            this.Controls.Add(this.statusStrip);
+            this.Controls.Add(this.m_statusStrip);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -267,36 +216,31 @@ namespace mslogin
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainFormFormClosed);
             this.Load += new System.EventHandler(this.MainFormLoad);
+            this.ResizeEnd += new System.EventHandler(this.MainForm_ResizeEnd);
             this.Layout += new System.Windows.Forms.LayoutEventHandler(this.MainFormLayout);
-            this.statusStrip.ResumeLayout(false);
-            this.statusStrip.PerformLayout();
+            this.m_statusStrip.ResumeLayout(false);
+            this.m_statusStrip.PerformLayout();
             this.Mainpanel.ResumeLayout(false);
             this.Mainpanel.PerformLayout();
-            this.Expanel.ResumeLayout(false);
-            this.Expanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
 		}
-		private System.Windows.Forms.TextBox ipBox;
-		private System.Windows.Forms.Label UI2;
-		private System.Windows.Forms.Label UI3;
-		private System.Windows.Forms.ComboBox localeBox;
-		private System.Windows.Forms.Label UI1;
-		private System.Windows.Forms.ToolStripStatusLabel StatusLabel;
-		private System.Windows.Forms.Button Commit;
-		private System.Windows.Forms.StatusStrip statusStrip;
-		private System.Windows.Forms.ComboBox AdaptorcomboBox;
-        private System.Windows.Forms.Button SetPath;
-        private System.Windows.Forms.Button Check;
-        private System.Windows.Forms.TextBox portBox;
-        private System.Windows.Forms.Button Stop;
+        private System.Windows.Forms.TextBox m_ipBox;
+		private System.Windows.Forms.Label m_lablocale;
+		private System.Windows.Forms.Label m_labIp;
+        private System.Windows.Forms.ComboBox m_localeBox;
+		private System.Windows.Forms.Label m_labNetWork;
+        private System.Windows.Forms.ToolStripStatusLabel m_StatusLabel;
+		private System.Windows.Forms.Button m_btnCommit;
+		private System.Windows.Forms.StatusStrip m_statusStrip;
+        private System.Windows.Forms.ComboBox m_AdaptorcomboBox;
+        private System.Windows.Forms.Button m_btnSetPath;
+        private System.Windows.Forms.Button m_btnCheck;
+        private System.Windows.Forms.TextBox m_portBox;
+        private System.Windows.Forms.Button m_btnStop;
         private System.Windows.Forms.Panel Mainpanel;
-        private System.Windows.Forms.Panel Expanel;
-        private System.Windows.Forms.Label NoPortlabel;
-        private System.Windows.Forms.TextBox NoPortBox;
-        private System.Windows.Forms.TextBox fixpatchbox;
-        private System.Windows.Forms.Label FixPatchlabel;
-        private System.Windows.Forms.Button RedirectOnlyButton;
+        private ExtendPage m_extendPage;
+        private System.Windows.Forms.Button m_btnMore;
 	}
 }

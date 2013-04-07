@@ -31,14 +31,14 @@ namespace mslogin
         private static  extern UInt32 DllInit();
         // dll main function
         [DllImport("winredirip.dll", EntryPoint = "redirIP",  CharSet =CharSet.Unicode, ExactSpelling=true,CallingConvention = CallingConvention.StdCall)]
-		private static  extern UInt32 redirIp(string devname,string orip, string redip , byte protocol ,
+        private static extern UInt32 redirIp(string devname, string orip, string redip, byte protocol,
 		                      UInt16 port );
         // free dll resource
         [DllImport("winredirip.dll", EntryPoint = "Free", ExactSpelling = true,SetLastError=true, CallingConvention = CallingConvention.StdCall)]
-		private static extern UInt32 Free( byte closelib);
+        private static extern UInt32 Free(byte closelib);
         // extened function need newest 
         [DllImport("winredirip.dll", EntryPoint = "RegisterNoPort",  ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
-        private static extern void RegisterNoPort(UInt16[] portlist,UInt32 size);
+        private static extern void RegisterNoPort(UInt16[] portlist, UInt32 size);
         private delegate void MyCallBack(IntPtr data, UInt32 size);
         [DllImport("winredirip.dll", EntryPoint = "RegisterInCallBack", ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static extern void RegisterInCallBack(MyCallBack c);
@@ -56,24 +56,25 @@ namespace mslogin
         private static extern long WritePrivateProfileString(string section, string key, 
                                                              string val, string filePath);
         //callback
-        private MyCallBack InC, OutC;
+        MyCallBack m_callInC, m_callOutC;
         // i18 language file reader
-		 LangString ls;
+		LangString m_i18ls;
         // ms main file path
-         string filepath="";
+        string m_strFilepath="";
         // if main form opened? if lang file no load it will be false
-        Boolean Opened = false;
+        Boolean m_bOpened = false;
         // if redirecting work?
-        Boolean Worked = false;
+        Boolean m_bWorked = false;
         // if callRun
-        bool callRun = false;
+        bool m_bcallRun = false;
         // last status for ip and netinterface
-        string[] laststatus = new string[4];
+        string[] m_arrLaststatus = new string[4];
         // for connect 
         private static ManualResetEvent TimeoutObject = new ManualResetEvent(false);
         //
-        byte fixPathch,orginPatch=0;
-
+        byte m_byOrginPatch=0;
+        byte m_byFixPathch = 0;
+        private bool isExtendPageShow = false;
 
         private static byte[] sSecretKey = new byte[] {
             0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0xB4, 0x00, 0x00, 0x00,
@@ -103,7 +104,7 @@ namespace mslogin
         private RijndaelManaged mAES = new RijndaelManaged();
 
         // locale dic
-		Dictionary<String, String> locamap=new Dictionary<string, string>()
+		 static Dictionary<String, String> locamap=new Dictionary<string, string>()
 		{
 			{"Chinese","221.231.130.70"}
 		};
@@ -116,34 +117,35 @@ namespace mslogin
             // try get i18 file 
 			try{
                 // if en??
-				ls=new LangString("zh");}
+				m_i18ls=new LangString("zh");}
 			catch
 			{
 					MessageBox.Show("Lang File not exist or open error.");
 			}
             // init ui
-			if(ls!=null)
+            if (m_i18ls != null)
 			{
-			Text=ls.get("title");
-			UI1.Text=ls.get("UI1");
-			UI2.Text=ls.get("UI2");
-			UI3.Text=ls.get("UI3");
-            SetPath.Text = ls.get("UI4");
-            Check.Text = ls.get("UI5");
-            Stop.Text = ls.get("UI6");
-			Commit.Text=ls.get("Commit");
-            NoPortlabel.Text = ls.get("UI7");
-            FixPatchlabel.Text = ls.get("UI8");
-            RedirectOnlyButton.Text = ls.get("UI9");
-			StatusLabel.Text=ls.get("StatusLabel_1");
+			Text=m_i18ls.get("title");
+            m_extendPage = new ExtendPage(this);
+			m_labNetWork.Text=m_i18ls.get("UI1");
+			m_lablocale.Text=m_i18ls.get("UI2");
+			m_labIp.Text=m_i18ls.get("UI3");
+            m_btnSetPath.Text = m_i18ls.get("UI4");
+            m_btnCheck.Text = m_i18ls.get("UI5");
+            m_btnStop.Text = m_i18ls.get("UI6");
+			m_btnCommit.Text=m_i18ls.get("Commit");
+            m_extendPage.m_labNoPort.Text = m_i18ls.get("UI7");
+            m_extendPage.m_labFixPatch.Text = m_i18ls.get("UI8");
+            m_extendPage.m_btnRedirectOnly.Text = m_i18ls.get("UI9");
+			m_StatusLabel.Text=m_i18ls.get("StatusLabel_1");
 			}
-            localeBox.Items.Clear();
+            m_localeBox.Items.Clear();
             // init localebox
             foreach (KeyValuePair<String,String> kvp in locamap)
             {
-                localeBox.Items.Add(kvp.Key);
+                m_localeBox.Items.Add(kvp.Key);
             }
-			localeBox.SelectedIndex=0;
+			m_localeBox.SelectedIndex=0;
             mAES.Key = sSecretKey;
             mAES.Mode = CipherMode.ECB;
             mAES.Padding = PaddingMode.PKCS7;
@@ -151,8 +153,8 @@ namespace mslogin
 			
 		}
 		void MainFormLoad(object sender, EventArgs e)
-		{	
-		if(ls==null)Close();
+		{
+            if (m_i18ls == null) Close();
         try
         {
             // try to init dll
@@ -161,7 +163,7 @@ namespace mslogin
         catch 
         { 
             // close if cannot
-            MessageBox.Show(ls.get("msg/m1"));
+            MessageBox.Show(m_i18ls.get("msg/m1"));
             Close();
         }
             // read conf file
@@ -173,11 +175,11 @@ namespace mslogin
 		GetPrivateProfileString("conf","dev","",sb,100,"./conf.ini");
 		string dev=sb.ToString();
         GetPrivateProfileString("conf", "path", "", sb, 100, "./conf.ini");
-        filepath = sb.ToString();
+        m_strFilepath = sb.ToString();
         GetPrivateProfileString("conf", "port", "8484", sb, 100, "./conf.ini");
-        portBox.Text = sb.ToString();
+        m_portBox.Text = sb.ToString();
         GetPrivateProfileString("conf", "noport", "",sb,100, "./conf.ini");
-        NoPortBox.Text = sb.ToString();
+        m_extendPage.m_NoPortBox.Text = sb.ToString();
 		int select=0;
             // read adapters
 		ManagementClass   mc   =   new   ManagementClass( "Win32_NetworkAdapterConfiguration"); 
@@ -186,20 +188,20 @@ namespace mslogin
 			string[] ips=(string [])(mo["IPAddress"]);
 			if (ips!=null)
 			{
-                if (!AdaptorcomboBox.Items.Contains(ips[0]))
-				AdaptorcomboBox.Items.Add(ips[0]);
+                if (!m_AdaptorcomboBox.Items.Contains(ips[0]))
+				m_AdaptorcomboBox.Items.Add(ips[0]);
 			}
 			
 		}
-		AdaptorcomboBox.Items.Add("\\DEVICE\\NDISWANIP");
-		for (int i=0;i<AdaptorcomboBox.Items.Count;i++)
-			if(((string)AdaptorcomboBox.Items[i]).Equals(dev))select=i;
-		AdaptorcomboBox.SelectedIndex=select;
-		ipBox.Text=ip;
-        InC = new MyCallBack(InCallBack);
-        OutC = new MyCallBack(OutCallBack);
+		m_AdaptorcomboBox.Items.Add("\\DEVICE\\NDISWANIP");
+		for (int i=0;i<m_AdaptorcomboBox.Items.Count;i++)
+			if(((string)m_AdaptorcomboBox.Items[i]).Equals(dev))select=i;
+		m_AdaptorcomboBox.SelectedIndex=select;
+		m_ipBox.Text=ip;
+        m_callInC = new MyCallBack(InCallBack);
+        m_callOutC = new MyCallBack(OutCallBack);
        // opened
-        Opened = true;
+        m_bOpened = true;
 		}
 		
 		void StatusStripItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -225,7 +227,7 @@ namespace mslogin
             TimeoutObject.Set();
         }
         // check server status return null if fail string[] = ver , path , locale no
-        string[] CheckServer(string testip,ushort testport)
+        public string[] CheckServer(string testip,ushort testport)
         {
             byte[] buff=new byte[100];
             int tmp=0;
@@ -234,7 +236,7 @@ namespace mslogin
             try {
            TimeoutObject.Reset();
            sock.BeginConnect(testip, (int)testport, TimeOutCallBack, sock);
-           if (TimeoutObject.WaitOne(1000))
+           if (TimeoutObject.WaitOne(1000,true))
            {
                if (!sock.Connected)
                {
@@ -296,33 +298,33 @@ namespace mslogin
         // incallback
        unsafe void InCallBack(IntPtr data, UInt32 size)
         {
-            if (size != 16 || orginPatch!=0) return;
+            if (size != 16 || m_byOrginPatch!=0) return;
             byte* d = (byte *)data.ToPointer();
             if (d[0] != 14) return;
             mIV[0] = d[7]; mIV[1] = d[8]; mIV[2] = d[9]; mIV[3] = d[10];
-            orginPatch = d[6];
-            d[6] = (byte)(fixPathch + 0x30);
+            m_byOrginPatch = d[6];
+            d[6] = (byte)(m_byFixPathch + 0x30);
         }
        unsafe void OutCallBack(IntPtr data, UInt32 size)
        {
-           if (size != 11 || orginPatch==0 ) return;
+           if (size != 11 || m_byOrginPatch==0 ) return;
            byte* unsafe_d = (byte*)data.ToPointer();
            byte[] d = new byte[size-4];
            for (int i = 4; i < size; i++) d[i-4] = unsafe_d[i];
            TransformAES(d);
-           d[2 + 3] = (byte)(orginPatch-0x30);
+           d[2 + 3] = (byte)(m_byOrginPatch - 0x30);
            TransformAES(d);
            for (int i = 4; i < size; i++)  unsafe_d[i]=d[i - 4];
-           orginPatch = 0;
+           m_byOrginPatch = 0;
        }
 		void CommitClick(object sender, EventArgs e)
 		{
-            RedirectOnlyButton_Click(sender, e);
+            ExPage_RedirectOnlyButton_Click();
             //start game
-            if (!callRun) return;
+            if (!m_bcallRun) return;
              Process Maple = new Process();
-                Maple.StartInfo.FileName = filepath;
-                Maple.StartInfo.Arguments =locamap[localeBox.Text]+" "+portBox.Text;
+                Maple.StartInfo.FileName = m_strFilepath;
+                Maple.StartInfo.Arguments =locamap[m_localeBox.Text]+" "+m_portBox.Text;
                 Maple.Start();
           
 		/*	*/
@@ -331,21 +333,21 @@ namespace mslogin
 		void MainFormFormClosed(object sender, FormClosedEventArgs e)
 		{
             // if opend wirte conf
-            if (Opened)
+            if (m_bOpened)
             {
-                WritePrivateProfileString("conf", "ip", ipBox.Text, "./conf.ini");
-                WritePrivateProfileString("conf", "loc", localeBox.Text, "./conf.ini");
-                WritePrivateProfileString("conf", "dev", AdaptorcomboBox.Text, "./conf.ini");
-                WritePrivateProfileString("conf", "path", filepath, "./conf.ini");
-                WritePrivateProfileString("conf", "port", portBox.Text, "./conf.ini");
-                WritePrivateProfileString("conf", "noport", NoPortBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "ip", m_ipBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "loc", m_localeBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "dev", m_AdaptorcomboBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "path", m_strFilepath, "./conf.ini");
+                WritePrivateProfileString("conf", "port", m_portBox.Text, "./conf.ini");
+                WritePrivateProfileString("conf", "noport", m_extendPage.m_NoPortBox.Text, "./conf.ini");
             }
            
 		}
          
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-             if (Opened)Free(1);
+             if (m_bOpened)Free(1);
         }
         // set path
         private void SetPath_Click(object sender, EventArgs e)
@@ -355,171 +357,198 @@ namespace mslogin
             ofd.CheckPathExists = true;
             if (ofd.ShowDialog() == DialogResult.OK)
             {
-                filepath = ofd.FileName;
+                m_strFilepath = ofd.FileName;
             }
         }
 
         private void Check_Click(object sender, EventArgs e)
         {
             ushort ipport;
-            if (ipBox.Text == "")
+            if (m_ipBox.Text == "")
             {
-                MessageBox.Show(ls.get("imsg/m1"));
+                MessageBox.Show(m_i18ls.get("imsg/m1"));
                 return;
             }
-            if (!ushort.TryParse(portBox.Text, out ipport))
+            if (!ushort.TryParse(m_portBox.Text, out ipport))
             {
-                MessageBox.Show(ls.get("imsg/m5"));
+                MessageBox.Show(m_i18ls.get("imsg/m5"));
                 return;
             }
             // worked and check last ip will fail
-            if (Worked&&laststatus[0] == ipBox.Text)
+            if (m_bWorked&&m_arrLaststatus[0] == m_ipBox.Text)
             {
-                MessageBox.Show(ls.get("imsg/m8"));
+                MessageBox.Show(m_i18ls.get("imsg/m8"));
                 return;
             }
-            string[] result = CheckServer(ipBox.Text, ipport);
+            string[] result = CheckServer(m_ipBox.Text, ipport);
             if (result == null)
             {
-                MessageBox.Show(ls.get("imsg/m6"));
+                MessageBox.Show(m_i18ls.get("imsg/m6"));
                 return;
             }
             // show msg
-            MessageBox.Show(string.Format(ls.get("imsg/m7"), result[0], result[1], result[2]));
+            MessageBox.Show(string.Format(m_i18ls.get("imsg/m7"), result[0], result[1], result[2]));
         }
 
         private void Stop_Click(object sender, EventArgs e)
         {
-            if (!Worked)
+            if (!m_bWorked)
             {
-                MessageBox.Show(ls.get("imsg/m9"));
+                MessageBox.Show(m_i18ls.get("imsg/m9"));
                 return;
             }
             UInt32 ret = Free(0);
             if (ret == 0)
             {
-                MessageBox.Show(ls.get("imsg/m10"));
-                Worked = false;
+                MessageBox.Show(m_i18ls.get("imsg/m10"));
+                m_bWorked = false;
             }
             else
             {
-                MessageBox.Show(ls.get("imsg/m11"));
+                MessageBox.Show(m_i18ls.get("imsg/m11"));
             }
-            StatusLabel.Text = ls.get("StatusLabel_1");
+            m_StatusLabel.Text = m_i18ls.get("StatusLabel_1");
         }
 
-        private void RedirectOnlyButton_Click(object sender, EventArgs e)
-        {
-            UInt32 ret = 0;
-            ushort ipport;
-            StatusLabel.Text = ls.get("StatusLabel_1");
-            // check ms mainfile exist
-            callRun = false;
-            if (!File.Exists(filepath))
-            {
-                MessageBox.Show(ls.get("imsg/m4"));
-                return;
-            }
-            if (laststatus[3] != fixpatchbox.Text)
-            {
-
-
-                if (byte.TryParse(fixpatchbox.Text, out fixPathch))
-                {
-                    RegisterInCallBack(InC);
-                    RegisterOutCallBack(OutC);
-                }
-                else
-                {
-                    RegisterInCallBack(null);
-                    RegisterOutCallBack(OutC);
-                }
-            }
-
-            // ipbox empty
-           if (ipBox.Text == "")
-                {
-                    MessageBox.Show(ls.get("imsg/m1"));
-                    return;
-                }
-            // port right
-            if (!ushort.TryParse(portBox.Text, out ipport))
-            {
-                MessageBox.Show(ls.get("imsg/m5"));
-                return;
-            }
-            // locamap right
-            if (!locamap.ContainsKey(localeBox.Text))
-            {
-                MessageBox.Show(ls.get("imsg/m2"));
-                return;
-            }
-            // if change noport
-            if (NoPortBox.Text!="" && laststatus[2] != NoPortBox.Text)
-            {
-                String[] portlist = NoPortBox.Text.Split(',');
-                UInt16[] plist =new UInt16[portlist.Length];
-                for(int i=0;i<portlist.Length; i++)
-                {
-                    UInt16 res;
-                    if (UInt16.TryParse(portlist[i], out res))
-                        plist[i] = res;
-                }
-                RegisterNoPort(plist,unchecked((UInt32)plist.Length));
-            }
-            // if  change  ??
-            if (laststatus[0] != ipBox.Text || laststatus[1] != AdaptorcomboBox.Text)
-            {
-                // if work free
-                if (Worked)
-                {
-                    ret = Free(0);
-                    if (ret > 0)
-                    {
-                        MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                        StatusLabel.Text = ls.get("StatusLabel_3");
-                        return;
-                    }
-                    Worked = false;
-                }
-                // check 
-                string[] result = CheckServer(ipBox.Text, ipport);
-                if (result == null)
-                {
-                    MessageBox.Show(ls.get("imsg/m6"));
-                    return;
-                }
-
-            }//end if change
-            // if not worked redirect
-            if (!Worked)
-            {
-                ret = redirIp(AdaptorcomboBox.Text, locamap[localeBox.Text], ipBox.Text, (byte)1, (UInt16)0);
-
-                if (ret != 0)
-                {
-                    MessageBox.Show(ret.ToString() + ":" + ls.get("msg/m" + ret));
-                    StatusLabel.Text = ls.get("StatusLabel_3");
-                    return;
-                }
-            }
-            //finsh
-            StatusLabel.Text = ls.get("StatusLabel_2") + ipBox.Text;
-
-            Worked = true;
-            // set last status
-            laststatus[0] = ipBox.Text.Clone().ToString();
-            laststatus[1] = AdaptorcomboBox.Text.Clone().ToString();
-            laststatus[2] = NoPortBox.Text.Clone().ToString();
-            laststatus[3] = fixpatchbox.Text.Clone().ToString();
-            callRun = true;
-        }
+        
 
         private void NoPortlabel_Click(object sender, EventArgs e)
         {
 
         }
 
+        private void More_Click(object sender, EventArgs e)
+        {
+            if (!isExtendPageShow)
+            {
+                isExtendPageShow = true;
+                m_btnMore.Text = "<";
+                m_extendPage.Show();
+                MainForm_ResizeEnd(sender, e);
+            }
+            else
+            {
+                isExtendPageShow = false;
+                m_btnMore.Text = ">";
+                m_extendPage.Hide();
+            }
+            
+        }
+
+        private void MainForm_ResizeEnd(object sender, EventArgs e)
+        {
+            if (!isExtendPageShow) return;
+            m_extendPage.Top = Top + 10;
+            m_extendPage.Height = Height - 20;
+            m_extendPage.Left = Right+3 ;
+        }
+        public void ExPage_RedirectOnlyButton_Click()
+        {
+            UInt32 ret = 0;
+            ushort ipport;
+            m_StatusLabel.Text = m_i18ls.get("StatusLabel_1");
+            // check ms mainfile exist
+           m_bcallRun = false;
+            if (!File.Exists(m_strFilepath))
+            {
+                MessageBox.Show(m_i18ls.get("imsg/m4"));
+                return;
+            }
+            if (m_arrLaststatus[3] != m_extendPage.m_Fixpatchbox.Text)
+            {
+
+
+                if (byte.TryParse(m_extendPage.m_Fixpatchbox.Text, out m_byFixPathch))
+                {
+                    RegisterInCallBack(m_callInC);
+                    RegisterOutCallBack(m_callOutC);
+                }
+                else
+                {
+                   RegisterInCallBack(null);
+                   RegisterOutCallBack(m_callOutC);
+                }
+            }
+
+            // ipbox empty
+            if (m_ipBox.Text == "")
+            {
+                MessageBox.Show(m_i18ls.get("imsg/m1"));
+                return;
+            }
+            // port right
+            if (!ushort.TryParse(m_portBox.Text, out ipport))
+            {
+                MessageBox.Show(m_i18ls.get("imsg/m5"));
+                return;
+            }
+            // locamap right
+            if (!MainForm.locamap.ContainsKey(m_localeBox.Text))
+            {
+                MessageBox.Show(m_i18ls.get("imsg/m2"));
+                return;
+            }
+            // if change noport
+            if (m_extendPage.m_NoPortBox.Text != "" && m_arrLaststatus[2] != m_extendPage.m_NoPortBox.Text)
+            {
+                String[] portlist = m_extendPage.m_NoPortBox.Text.Split(',');
+                UInt16[] plist = new UInt16[portlist.Length];
+                for (int i = 0; i < portlist.Length; i++)
+                {
+                    UInt16 res;
+                    if (UInt16.TryParse(portlist[i], out res))
+                        plist[i] = res;
+                }
+                RegisterNoPort(plist, unchecked((UInt32)plist.Length));
+            }
+            // if  change  ??
+            if (m_arrLaststatus[0] != m_ipBox.Text || m_arrLaststatus[1] != m_AdaptorcomboBox.Text)
+            {
+                // if work free
+                if (m_bWorked)
+                {
+                    ret = Free(0);
+                    if (ret > 0)
+                    {
+                        MessageBox.Show(ret.ToString() + ":" + m_i18ls.get("msg/m" + ret));
+                        m_StatusLabel.Text =m_i18ls.get("StatusLabel_3");
+                        return;
+                    }
+                    m_bWorked = false;
+                }
+                // check 
+                string[] result = CheckServer(m_ipBox.Text, ipport);
+                if (result == null)
+                {
+                    MessageBox.Show(m_i18ls.get("imsg/m6"));
+                    return;
+                }
+
+            }//end if change
+            // if not worked redirect
+            if (!m_bWorked)
+            {
+                ret = redirIp(m_AdaptorcomboBox.Text, MainForm.locamap[m_localeBox.Text],
+                       m_ipBox.Text, (byte)1, (UInt16)0);
+
+                if (ret != 0)
+                {
+                    MessageBox.Show(ret.ToString() + ":" +m_i18ls.get("msg/m" + ret));
+                    m_StatusLabel.Text =m_i18ls.get("StatusLabel_3");
+                    return;
+                }
+            }
+            //finsh
+            m_StatusLabel.Text = m_i18ls.get("StatusLabel_2") + m_ipBox.Text;
+
+            m_bWorked = true;
+            // set last status
+            m_arrLaststatus[0] = m_ipBox.Text.Clone().ToString();
+            m_arrLaststatus[1] = m_AdaptorcomboBox.Text.Clone().ToString();
+            m_arrLaststatus[2] = m_extendPage.m_NoPortBox.Text.Clone().ToString();
+            m_arrLaststatus[3] = m_extendPage.m_Fixpatchbox.Text.Clone().ToString();
+            m_bcallRun = true;
+        }
 
 	}
 }
