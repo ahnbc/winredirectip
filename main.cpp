@@ -246,9 +246,6 @@ void signalExit(int)
 	HANDLE mutex;
 	using namespace global;
 	DeleteCriticalSection(&global::cs);
-	mutex =::OpenMutexW(MUTEX_MODIFY_STATE,FALSE,L"WINREDIR");
-	if(mutex!=INVALID_HANDLE_VALUE)
-		ReleaseMutex(mutex);
 	ret=DrvCall::Init();
 	if(ret)
 		return ret;
@@ -659,14 +656,16 @@ static unsigned __stdcall MainWork(void * pList)
 		global::g_hInThread=0;
 		return 0;
 	}
-	mutex=::CreateMutexW(NULL,FALSE,L"WINREDIR");
+	mutex=::CreateMutexW(NULL,TRUE,L"WINREDIR");
 	if(mutex==NULL||GetLastError()!=S_OK)
-		return 50;
+		return 51;
 	hlist[0]=global::g_hInThread;
 	hlist[1]=global::g_hOutThread;
 	do{
 		ret=WaitForMultipleObjectsEx(2,hlist,0,0x3e8,1);
 	}while(ret==0x102);
+	ReleaseMutex(mutex);
+	CloseHandle(mutex);
 	return 0;
 }
 
@@ -689,12 +688,6 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	if(IsWow64Current())
 	{
 		return 40;
-	}
-	mutex =::OpenMutexW(MUTEX_MODIFY_STATE,FALSE,L"WINREDIR");
-	if(mutex!=NULL )
-	{
-		ReleaseMutex(mutex);
-		return 51;
 	}
 	// 从环境中获取 不转发的端口
 	memset(env_noport,0,2000);
@@ -807,7 +800,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 
 	//HANDLE ev1;
 	//inev=CreateEvent(0,0,0,0);
-
+	
 	//启动主线程
    global::g_hMainThread=
 	   (HANDLE)_beginthreadex(NULL,0,MainWork,NULL,0,&MainID);
@@ -961,7 +954,9 @@ if(argc ==1){
 	}
 	wprintf(L"Running\n");
 		if(global::g_hMainThread){
-			WaitForSingleObject(global::g_hMainThread,INFINITE);
+			Sleep(1000);
+			Free(0);
+			//WaitForSingleObject(global::g_hMainThread,INFINITE);
 		}
 	
 	wprintf(L"End\n");
