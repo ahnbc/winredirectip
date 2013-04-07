@@ -155,6 +155,26 @@ namespace mslogin
 		void MainFormLoad(object sender, EventArgs e)
 		{
             if (m_i18ls == null) Close();
+            Mutex mutex;
+            bool doesExist = true;
+            try
+            {
+                mutex = Mutex.OpenExisting("MXDLOGIN");
+            }
+            catch
+            {
+                doesExist = false;
+
+            }
+            if (doesExist)
+            {
+                MessageBox.Show(m_i18ls.get("msg/m51"));
+                Close();
+            }
+            else
+            {
+                mutex = new Mutex(true, "MXDLOGIN");
+            }
         try
         {
             // try to init dll
@@ -319,6 +339,11 @@ namespace mslogin
        }
 		void CommitClick(object sender, EventArgs e)
 		{
+            if (!File.Exists(m_strFilepath))
+            {
+                MessageBox.Show(m_i18ls.get("imsg/m4"));
+                return;
+            }
             ExPage_RedirectOnlyButton_Click();
             //start game
             if (!m_bcallRun) return;
@@ -335,6 +360,8 @@ namespace mslogin
             // if opend wirte conf
             if (m_bOpened)
             {
+                Mutex mutex = new Mutex(true, "MXDLOGIN");
+                mutex.ReleaseMutex();
                 WritePrivateProfileString("conf", "ip", m_ipBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "loc", m_localeBox.Text, "./conf.ini");
                 WritePrivateProfileString("conf", "dev", m_AdaptorcomboBox.Text, "./conf.ini");
@@ -448,12 +475,8 @@ namespace mslogin
             ushort ipport;
             m_StatusLabel.Text = m_i18ls.get("StatusLabel_1");
             // check ms mainfile exist
-           m_bcallRun = false;
-            if (!File.Exists(m_strFilepath))
-            {
-                MessageBox.Show(m_i18ls.get("imsg/m4"));
-                return;
-            }
+            m_bcallRun = false;
+            
             if (m_arrLaststatus[3] != m_extendPage.m_Fixpatchbox.Text)
             {
 
