@@ -7,6 +7,9 @@
 <UI4 zh="冒险岛路径" en="Setpath" />
 <UI5 zh="检查服务器" en="Check" />
 <UI6 zh="关闭重定向" en="Stop Redirect" />
+<UI7 zh="不转发端口:" en="No Redirect Port:" />
+<UI8 zh="小版本调整(测试功能):" en="Fix Patch:" />
+<UI9 zh="只重定向" en="RedirectOnly" />
 <StatusLabel_1 zh="准备就绪 " en="Ready" />
 <Commit zh="开始游戏 " en="Start Game" />
 <StatusLabel_2 zh="正在重定向到: " en="Redirecting to:" />
@@ -39,6 +42,9 @@
 <m31 zh="IP 输入错误 " en="IP Error" />
 <m33 zh="Win 套接字接口无法启动" en="WSAStartup Error" />
 <m40 zh="64位用户不要运行32位的本程序" en="Run 64 bit version" />
+<m50 zh="无法创建互斥信息" en="Create Mutex Fail" />
+<m51 zh="已有一个转发程序运行" en="One Redirector Running" />
+<m52 zh="未知" en="Unknown" />
 </msg>
 <imsg>
 <m1 zh="ip 为空" en="ip empty" />
