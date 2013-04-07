@@ -1,4 +1,5 @@
 
+
 #include "main.h"
 #include "cstdio"
 #include "cstdlib"
@@ -242,8 +243,12 @@ void signalExit(int)
 {
 	DWORD code;
 	static int ret=0;
+	HANDLE mutex;
 	using namespace global;
 	DeleteCriticalSection(&global::cs);
+	mutex =::OpenMutexW(MUTEX_MODIFY_STATE,FALSE,L"WINREDIR");
+	if(mutex!=INVALID_HANDLE_VALUE)
+		ReleaseMutex(mutex);
 	ret=DrvCall::Init();
 	if(ret)
 		return ret;
@@ -633,6 +638,7 @@ static unsigned __stdcall MainWork(void * pList)
 {
 	HANDLE hlist[2]; // 进出线程的 等待
 	DWORD ret; 
+	HANDLE mutex;
 	unsigned  InID,OutID;
 	if(!global::g_hInThread)
 		global::g_hInThread=(HANDLE)_beginthreadex(NULL,0,InWork,NULL,0,&InID);
@@ -653,6 +659,9 @@ static unsigned __stdcall MainWork(void * pList)
 		global::g_hInThread=0;
 		return 0;
 	}
+	mutex=::CreateMutexW(NULL,FALSE,L"WINREDIR");
+	if(mutex==INVALID_HANDLE_VALUE||GetLastError()!=S_OK)
+		return 50;
 	hlist[0]=global::g_hInThread;
 	hlist[1]=global::g_hOutThread;
 	do{
@@ -672,6 +681,7 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	hostent * he;
 	WORD wVersionRequested;
 	WSADATA wsaData;
+	HANDLE mutex;
 	CAutoBuffer<char> chrtmp(100);
 	CAutoBuffer<wchar_t> env_noport(1000);
 	wchar_t *pport;
@@ -680,6 +690,9 @@ UINT  WINAPI redirIP(const wchar_t szDevName[],const wchar_t cporIP[],const wcha
 	{
 		return 40;
 	}
+	mutex =::OpenMutexW(MUTEX_MODIFY_STATE,FALSE,L"WINREDIR");
+	if(mutex!=INVALID_HANDLE_VALUE || GetLastError()==S_OK)
+		return 51;
 	// 从环境中获取 不转发的端口
 	memset(env_noport,0,2000);
 	ret=GetEnvironmentVariableW(L"noport",env_noport,1000);
